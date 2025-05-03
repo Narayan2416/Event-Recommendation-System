@@ -1,1 +1,1 @@
-# Event-Recommendation-System
+![image](https://github.com/user-attachments/assets/d2f6b90c-b475-4ee0-a83b-ce41708c48d4)# Event-Recommendation-Syst![image](https://github.com/user-attachments/assets/db3e70ba-3432-400b-904d-b5b809653412)
