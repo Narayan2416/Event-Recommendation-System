@@ -1,66 +1,37 @@
+import streamlit as st
 import pandas as pd
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime
-from pymongo import MongoClient
+from streamlit_option_menu import option_menu
+import psycopg2
 
 import base64
 
-client = MongoClient("mongodb://localhost:27017/")
-db = client["event_recommendation"]
-users = db["users"]
+# Function to encode the image to Base64
+def get_base64_image(image_path):
+    with open(image_path, "rb") as file:
+        encoded = base64.b64encode(file.read()).decode()
+    return encoded
 
-data=pd.read_csv("data/newevent_data.csv")
-
-def load_data():
-    # Load your event data here
-    return data[['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
-
-
-def format_datetime(dt_str):
-    if not dt_str:
-        return None
-
-    dt_str = str(dt_str).strip().lower()
-    if dt_str in ["not specified", "unknown", "n/a"]:
-        return None
-    try:
-        dt = datetime.fromisoformat(dt_str)
-        return dt.strftime("%d %b %Y, %I:%M %p")
-    except ValueError:
-        return None
-
-def get_event(id):
-    event=data[data['id']==int(id)]
-    ans=event.iloc[0][['id','title','mode','price','description','location and city','url']].to_dict()
-    ans['start_datetime'] = format_datetime(event.iloc[0]['start_datetime'])
-    ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])
-    return ans
-
-def build_Default_user_profile():
-    return {
-        "interests": [],
-        "location": "",
-        "event_history": []
-    }
-
-def user_exists(username, email):
-    return users.find_one({
-        "user_name": username,
-        "email": email
-    }) is not None
-
-def user_insert(username, email):
-    if not user_exists(username, email):
-        users.insert_one({
-            "user_name": username,
-            "email": email
-        })
-    return True
-
+# Function to add a background image using Base64
+def add_bg_from_base64(image_path):
+    encoded_image = get_base64_image(image_path)
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/jpeg;base64,{encoded_image}"); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,)
     
-def event_exist(user_email,event_name):
+def exist(user_email,event_name):
     con=psycopg2.connect(
           host='localhost',
           user='admin',
@@ -87,7 +58,7 @@ def event_exist(user_email,event_name):
         print(0)
         return False
 
-def event_insert(user_email,event_name):
+def insert(user_email,event_name):
 
     con=psycopg2.connect(
         host='localhost',
@@ -110,7 +81,7 @@ def event_insert(user_email,event_name):
     insert_query = """
     INSERT INTO registration (email_id,Event_Name) VALUES (%s, %s);
     """
-    if not event_exist(user_email,event_name):
+    if not exist(user_email,event_name):
         print("done")
         cur.execute(insert_query,(user_email,event_name))
         con.commit()
@@ -128,7 +99,7 @@ def event_insert(user_email,event_name):
 
 
 def send_registration_email(user_email, user_name, event_name,date):
-    if event_insert(user_email,event_name):
+    if insert(user_email,event_name):
         # Email credentials
         sender_email = r"projectexpo745@gmail.com"
         sender_password = r"btornwkiapiystcd"
