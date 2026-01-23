@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Search</title>
+    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
+    <link rel="stylesheet" href="{{ url_for('static', filename='search.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-inner">
+                <div class="sidebar-title">
+                    <span class="menu-icon" id="main-menu">☰</span>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <a href="/" class="nav-item" data-page="home">
+                        <span class="icon">🏠</span>
+                        Home
+                    </a>
+
+                    <a href="/{{ username }}/search" class="nav-item" data-page="search">
+                        <span class="icon">📝</span>
+                        Register Events
+                    </a>
+
+                    <a href="/{{ username }}/recommender" class="nav-item active" data-page="recommender">
+                        <span class="icon">▶</span>
+                        Recommender
+                    </a>
+
+                    <a href="/{{ username }}/view" class="nav-item" data-page="view">
+                        <span class="icon">👁</span>
+                        My Events
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
+
+        <main class="main-content" id="main">
+            <div class="page-wrapper">
+                <h2>Search Events</h2>
+                <form id="search-form">
+                    <input type="text" id="search" placeholder="Search events...">
+                    <button type="submit">Search</button>
+                </form>
+            
+                <div class="filters">
+                    <select id="modeFilter">
+                        <option value="">All Modes</option>
+                    </select>
+
+                    <select id="priceFilter">
+                        <option value="">All Price Types</option>
+                    </select>
+
+                    <select id="cityFilter">
+                        <option value="">All Cities</option>
+                    </select>
+                </div>
+
+                <div id="results">
+                    Loading events...
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    let events = [];
+    let semanticResults=null;
+    /* 1️⃣ Load data automatically when HTML renders */
+    document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            const res = await fetch("/load_data");   // Flask endpoint
+            events = await res.json();
+
+            populateFilters(events);
+            displayEvents(events);
+        } catch (err) {
+            document.getElementById("results").innerText =
+                "Failed to load events";
+        }
+    });
+    function populateFilters(events) {
+        const modeSet = new Set();
+        const priceSet = new Set();
+        const citySet = new Set();
+
+        events.forEach(ev => {
+            if (ev["mode_clean"]) modeSet.add(ev["mode_clean"]);
+            if (ev["price_type"]) priceSet.add(ev["price_type"]);
+            if (ev["city"]) citySet.add(ev["city"]);
+        });
+        priceSet.delete("unknown");
+
+        fillSelect("modeFilter", modeSet);
+        fillSelect("priceFilter", priceSet);
+        fillSelect("cityFilter", citySet);
+    }
+
+    function fillSelect(id, values) {
+        const select = document.getElementById(id);
+        values.forEach(val => {
+            const option = document.createElement("option");
+            option.value = val;
+            option.textContent = val;
+            select.appendChild(option);
+        });
+    }
+
+
+    /* 2️⃣ Handle search */
+    async function searchWithQuery() {
+        const query = document.getElementById("search").value.trim();
+
+        if (!query) {
+            semanticResults = null;
+            applyFilters();
+            return;
+        }
+
+        const res = await fetch("/semantic_search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query })
+        });
+
+        semanticResults = await res.json();
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const mode = document.getElementById("modeFilter").value;
+        const price = document.getElementById("priceFilter").value;
+        const city = document.getElementById("cityFilter").value;
+
+        const source=semanticResults ?? events;
+
+        const filtered = source.filter(ev =>
+            (!mode || ev["mode_clean"] === mode) &&
+            (!price || ev["price_type"] === price) &&
+            (!city || ev["city"] === city)
+        );
+
+        displayEvents(filtered);
+    }
+
+    document.getElementById("search-form").addEventListener("submit", (e) => {
+        e.preventDefault();        // PREVENT PAGE RELOAD
+        searchWithQuery();   // run your filter logic
+    });
+
+    /*document.getElementById("search").addEventListener("input", applyFiltersAndSearch);*/
+    document.getElementById("modeFilter").addEventListener("change", applyFilters);
+    document.getElementById("priceFilter").addEventListener("change", applyFilters);
+    document.getElementById("cityFilter").addEventListener("change", applyFilters);
+
+    function isValidValue(val) {
+        return val && !["unknown", "not specified", "n/a"].includes(
+            String(val).toLowerCase()
+        );
+    }
+
+    function displayEvents(data) {
+        const container = document.getElementById("results");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No events found.</p>";
+            return;
+        }
+
+        data.forEach(ev => {
+            const div = document.createElement("div");
+            div.className = "event";
+            const username="{{ username }}";
+
+            div.addEventListener("click", () => {
+                window.location.href = `/${username}/event/${ev.id}`;
+            });
+
+            const metaParts = [];
+            if (isValidValue(ev.mode_clean)) metaParts.push(ev.mode_clean);
+            if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
+
+            div.innerHTML = `
+                <div class="event-title">${ev.title}</div>
+                <div class="event-meta">
+                    ${metaParts.join(" • ")}
+                </div>
+                <div class="event-desc">
+                    ${ev.description?.substring(0, 100) ?? ""}...
+                </div>
+                <span class="badge">${ev.city ?? ""}</span>
+            `;
+
+            container.appendChild(div);
+        });
+    }
+
+
+    const sidebar = document.getElementById("sidebar");
+    const mainToggle = document.getElementById("main-menu");
+    const floatingToggle = document.getElementById("sidebar-toggle-floating");
+
+    function toggleSidebar() {
+        sidebar.classList.toggle("hidden");
+    }
+
+    mainToggle.addEventListener("click", toggleSidebar);
+    floatingToggle.addEventListener("click", toggleSidebar);
+
+    const path = window.location.pathname;
+
+    document.querySelectorAll(".nav-item").forEach(link => {
+        const page = link.dataset.page;
+
+        if (
+            (page === "home" && path === "/") ||
+            (page === "search" && path.endsWith("/search")) ||
+            (page === "recommender" && path.endsWith("/recommender")) ||
+            (page === "view" && path.endsWith("/view"))
+        ) {
+            link.classList.add("active");
+        } else {
+            link.classList.remove("active");
+        }
+    });
+
+
+
+
+</script>
+
+</body>
+</html>
