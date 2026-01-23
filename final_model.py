@@ -1,66 +1,11 @@
+import streamlit as st
+import pickle as pic
 import pandas as pd
-import numpy as np
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
-from pymongo import MongoClient
+from sklearn.preprocessing import LabelEncoder
+from streamlit_option_menu import option_menu
+import mysql.connector
 
-# ---------------- LOAD DATA ----------------
-final_df = pd.read_csv("data/newevent_data.csv")
-
-embeddings = np.load("data/event_embeddings.npy") 
-
-assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embeddings"
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-client = MongoClient("mongodb://localhost:27017/")
-db = client["event_recommendation"]
-user = db["users"]
-
-def recommend_by_query(query, top_k=100):
-    query_emb = model.encode([query])
-    sims = cosine_similarity(query_emb, embeddings)[0]
-
-    valid_idx = np.where(sims > 0.25)[0]
-    if len(valid_idx) == 0:
-        return []
-
-    top_idx = valid_idx[np.argsort(sims[valid_idx])[::-1][:top_k]]
-    results = final_df.iloc[top_idx][["id", "title", "mode_clean", "price_type", "city", "description"]].copy()
-
-    results["score"] = (sims[top_idx] * 100).round(2)
-
-    return results.to_dict(orient="records")
-
-
-#print(recommend_by_query("ai workshop", top_k=5))
-
-
-def recommend_similar_event(event_index, top_k=10):
-    id = final_df.index[final_df['id']==int(event_index)][0]
-    event_emb = embeddings[id].reshape(1, -1)
-    sims = cosine_similarity(event_emb, embeddings)[0]
-
-    top_idx = sims.argsort()[::-1][1:top_k+1]
-    return final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
-
-def build_user_profile(event_indices):
-    return embeddings[event_indices].mean(axis=0).reshape(1, -1)
-
-
-def recommend_personalized(user_interest):
-    user_profile = build_user_profile(user_interest)
-
-    scores = cosine_similarity(user_profile, embeddings)[0]
-    top_idx = scores.argsort()[::-1][:5]
-
-    return final_df.iloc[top_idx][["title", "datetime", "url"]]
-
-
-
-
-#--------------------------------------------------------------------------------------------------------------------------------
+import base64
 
 # Function to encode the image to Base64
 def get_base64_image(image_path):
