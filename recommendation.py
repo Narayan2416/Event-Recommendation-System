@@ -113,7 +113,7 @@ def recommend_based_on_user_interaction(username, top_k=10):
     score = cosine_similarity(vector.reshape(1, -1), embeddings)[0]
     threshold = np.percentile(score, 80)
     score[score < threshold] = -1
-    print(score)
+    #print(score)
     interactions = get_recent_interactions(username)
     seen_event_ids = set(int(i['event_id']) for i in interactions if i['action']=='click')
     # Penalize already seen events
@@ -143,7 +143,7 @@ def recommend_based_on_prevSearches(username):
     top_idx = score .argsort()[::-1][:10]
     return final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
 
-print(recommend_based_on_user_interaction("naran"))
+#print(recommend_based_on_user_interaction("naran"))
 
 def build_user_profile(event_indices):
     return embeddings[event_indices].mean(axis=0).reshape(1, -1)

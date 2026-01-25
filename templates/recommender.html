@@ -46,41 +46,73 @@
                 <div class="searches">
                     <h2>Based on your searches...</h2>
                     <div class="searches-results" id="searches-results"> </div>
+                    <button id="searches-more" class="show-more">Show more</button>
                 </div>
                 <div class="interests">
                     <h2>Based on your interests...</h2>
                     <div class="interests-results" id="interests-results"> </div>
+                    <button id="interests-more" class="show-more">Show more</button>
                 </div>
             </div>
         </main>
 
     </div>
 <script>    
+    let searchEvents = [];
+    let interestEvents = [];
+
+    const INITIAL_COUNT = 4;
+
     async function loadRecommendations() {
-        try {
-            const res = await fetch("/api/recommendation", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            });
+        const res = await fetch("/api/recommendation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
 
-            if (!res.ok) {
-                throw new Error("Failed to fetch recommendations");
-            }
+        const data = await res.json();
 
-            const data = await res.json();
+        searchEvents = data.searches || [];
+        interestEvents = data.interests || [];
 
-            displayEvents(data.searches, "searches-results");
-            displayEvents(data.interests, "interests-results");
+        renderSection(
+            searchEvents,
+            "searches-results",
+            "searches-more"
+        );
 
-        } catch (err) {
-            console.error(err);
-            document.querySelector(".searches-results").innerHTML =
-                "<p>Unable to load recommendations.</p>";
-            document.querySelector(".interests-results").innerHTML =
-                "<p>Unable to load recommendations.</p>";
-        }
+        renderSection(
+            interestEvents,
+            "interests-results",
+            "interests-more"
+        );
     }
+
     loadRecommendations();
+
+    function renderSection(events, containerId, buttonId, expanded = false) {
+        const container = document.getElementById(containerId);
+        const button = document.getElementById(buttonId);
+
+        container.innerHTML = "";
+
+        const visibleEvents = expanded
+            ? events
+            : events.slice(0, INITIAL_COUNT);
+
+        displayEvents(visibleEvents, containerId);
+
+        // Button logic
+        if (events.length > INITIAL_COUNT) {
+            button.style.display = "inline-block";
+            button.textContent = expanded ? "Show less" : "Show more";
+        } else {
+            button.style.display = "none";
+        }
+
+        button.onclick = () => {
+            renderSection(events, containerId, buttonId, !expanded);
+        };
+    }
 
     function isValidValue(val) {
         return val && !["unknown", "not specified", "n/a"].includes(

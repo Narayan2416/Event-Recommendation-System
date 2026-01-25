@@ -25,22 +25,19 @@ def load_data_route():
     data = load_data()
     return jsonify(data)
 
-@app.route("/<username>/clicked_event/<event_id>", methods=['POST'])
+@app.route("/<username>/clicked_event/<event_id>", methods=['GET','POST'])
 def clicked_event(username, event_id):
     save_user_interaction(username, event_id, action="click")
-    return redirect(get_event(event_id=event_id)['url'])
+    return redirect(get_event(event_id)['url'])
 
-@app.route("/api/recommendation", methods=['POST'])
+@app.route("/api/recommendation", methods=['GET','POST'])
 def api_recommendation():
     username = session['username']
     if not username:
         return jsonify({"error": "Username is required"}), 400
 
-    # Call your recommendation logic here
-    print("is it ok?")
     rec_search=recommend_based_on_prevSearches(username)
     rec_interaction=recommend_based_on_user_interaction(username)
-    print("yes")
     return jsonify({"searches": rec_search, "interests": rec_interaction})
 
 # main pages---------------------------------------------------------------------
