@@ -23,12 +23,12 @@
 
                     <a href="/{{ username }}/search" class="nav-item" data-page="search">
                         <span class="icon">📝</span>
-                        Register Events
+                        Explore Events
                     </a>
 
                     <a href="/{{ username }}/recommender" class="nav-item active" data-page="recommender">
                         <span class="icon">▶</span>
-                        Recommender
+                        Recommended for You
                     </a>
 
                     <a href="/{{ username }}/view" class="nav-item" data-page="view">
@@ -60,7 +60,7 @@
                         <span>Free</span>
                     </div>
 
-                    <a href="{{event['url']}}" target="_blank" rel="noopener noreferrer">View Event</a>
+                    <a href="/{{ username }}/clicked_event/{{ event.id }}" target="_blank" rel="noopener noreferrer">View Event</a>
                 </div>
                 <div class="suggestions-wrapper">
                     <h3>Similar Events</h3>
@@ -74,6 +74,7 @@
 <script>
     const suggestionsData = {{ suggestions | tojson }};
     displayEvents(suggestionsData);
+    
     function isValidValue(val) {
         return val && !["unknown", "not specified", "n/a"].includes(
             String(val).toLowerCase()

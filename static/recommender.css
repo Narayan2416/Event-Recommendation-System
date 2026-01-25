@@ -177,23 +177,16 @@ body {
     box-shadow: 0 15px 40px rgba(0,0,0,0.12);
     max-width: 1400px;
     margin: 0 auto;
-}
-
-/* ================= RESULTS ================= */
-#suggestions {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
-    max-height: 550px;
+    max-height: 800px;
     overflow-y: auto;
 }
 
 /* Scrollbar */
-#suggestions::-webkit-scrollbar {
+.page-wrapper::-webkit-scrollbar {
     width: 8px;
 }
 
-#suggestions::-webkit-scrollbar-thumb {
+.page-wrapper::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 4px;
 }
@@ -263,188 +256,79 @@ body {
     opacity: 1;
 }
 
-/* ================= EVENT DETAIL PAGE ================= */
 
-.selected-event {
-    background: rgba(255, 255, 255, 0.96);
-    border-radius: 18px;
-    padding: 32px;
-    margin-bottom: 32px;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+/* ================= RECOMMENDER SECTIONS ================= */
+
+.searches,
+.interests {
+    margin-bottom: 40px;
 }
 
-/* Title */
-.selected-event .title {
-    font-size: 30px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    color: var(--text);
-}
-
-/* Location */
-.selected-event .location {
-    font-size: 14px;
-    color: var(--muted);
-    margin-bottom: 14px;
-}
-
-/* Date/Time */
-.selected-event .datetime {
-    font-size: 15px;
+.searches h2,
+.interests h2 {
+    font-size: 20px;
     font-weight: 600;
-    color: #111827;
-    margin-bottom: 12px;
-}
-
-
-/* Description */
-.selected-event .description {
-    font-size: 16px;
-    line-height: 1.7;
-    color: #374151;
-    margin-bottom: 18px;
-}
-
-/* Meta */
-.selected-event .meta {
-    display: flex;
-    gap: 16px;
-    margin-top: 10px;
-    font-size: 14px;
     color: #1f2937;
+    margin-bottom: 18px;
+    padding-left: 4px;
 }
 
-.selected-event .meta span {
-    background: #f3f4f6;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-weight: 500;
+/* Grid for event cards */
+.searches-results,
+.interests-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
 }
 
-
-/* CTA button */
-.selected-event a {
-    display: inline-block;
-    margin-top: 18px;
-    padding: 12px 22px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: white;
-    text-decoration: none;
-    font-weight: 600;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.selected-event a:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.4);
-}
-
-/* ================= SIMILAR EVENTS ================= */
-
-.suggestions-wrapper {
-    margin-top: 36px;
-    padding: 24px;
-    border-radius: 20px;
-    background: linear-gradient(
-        to bottom,
-        rgba(255,255,255,0.75),
-        rgba(255,255,255,0.95)
-    );
-}
-
-.suggestions-wrapper h3 {
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    padding-left: 8px;
-}
-
-.suggestions-wrapper h3::after {
-    font-size: 14px;
-    color: #6b7280;
-    font-weight: 400;
-}
-
-
-/* Grid for similar events */
-#suggestions {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding: 8px 8px 16px;
-    scroll-snap-type: x mandatory;
-}
-
-/* smooth scrollbar */
-#suggestions::-webkit-scrollbar {
-    height: 8px;
-}
-
-#suggestions::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 999px;
-}
-
-/* Reuse event card styling */
-#suggestions .event {
-    min-width: 300px;
-    max-width: 320px;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-    cursor: pointer;
-}
-
-
-#suggestions .event:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
-}
-
-/* Title */
-#suggestions .event-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 6px;
-}
-
-/* Meta */
-#suggestions .event-meta {
-    font-size: 13px;
+/* Empty state */
+.searches-results p,
+.interests-results p {
     color: var(--muted);
-    margin-bottom: 8px;
-}
-
-/* Description */
-#suggestions .event-desc {
     font-size: 14px;
-    color: #374151;
-    line-height: 1.5;
+    padding: 10px;
 }
 
-/* Badge */
-#suggestions .badge {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    background: #eef2ff;
-    color: #3730a3;
+/* ================= EVENT CARD ENHANCEMENTS ================= */
+
+
+/* subtle accent bar */
+.event::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
-/* ================= RESPONSIVE ================= */
+.event:hover::before {
+    opacity: 1;
+}
+
+/* ================= SECTION DIVIDER FEEL ================= */
+
+.searches {
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ================= RESPONSIVE TWEAKS ================= */
 
 @media (max-width: 768px) {
-    .selected-event {
-        padding: 24px;
+    .main-content {
+        padding: 20px;
     }
 
-    .selected-event .title {
-        font-size: 24px;
+    .page-wrapper {
+        padding: 20px;
     }
 
-    #suggestions {
+    .searches-results,
+    .interests-results {
         grid-template-columns: 1fr;
     }
 }

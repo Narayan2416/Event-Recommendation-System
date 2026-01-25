@@ -2,7 +2,7 @@ import pandas as pd
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime
+from datetime import datetime, timezone
 from pymongo import MongoClient
 
 import base64
@@ -10,6 +10,9 @@ import base64
 client = MongoClient("mongodb://localhost:27017/")
 db = client["event_recommendation"]
 users = db["users"]
+user_interaction=db["user_interaction"]
+user_profile=db["user_profile"]
+search_history=db["search_history"]
 
 data=pd.read_csv("data/newevent_data.csv")
 
@@ -38,6 +41,37 @@ def get_event(id):
     ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])
     return ans
 
+def save_search(username,query):
+    search_history.insert_one({
+        "username": username,
+        "query": query,
+        "timestamp": datetime.now(timezone.utc)
+    })
+
+def save_user_interaction(username, event_id, action):
+    user_interaction.insert_one({
+        "username": username,
+        "event_id": event_id,
+        "action": action,
+        "timestamp": datetime.now(timezone.utc)
+    })
+
+def get_recent_interactions(username, limit=4):
+    return list(
+        user_interaction
+        .find({"username": username})
+        .sort("timestamp", -1)
+        .limit(limit)
+    )
+
+def get_recent_searches(username, limit=4):
+    return list(
+        search_history
+        .find({"username": username})
+        .sort("timestamp", -1)
+        .limit(limit)
+    )
+
 def build_Default_user_profile():
     return {
         "interests": [],
@@ -47,82 +81,18 @@ def build_Default_user_profile():
 
 def user_exists(username, email):
     return users.find_one({
-        "user_name": username,
+        "username": username,
         "email": email
     }) is not None
 
 def user_insert(username, email):
     if not user_exists(username, email):
         users.insert_one({
-            "user_name": username,
-            "email": email
+            "username": username,
+            "email": email,
+            "timestamp": datetime.now(timezone.utc)
         })
     return True
-
-    
-def event_exist(user_email,event_name):
-    con=psycopg2.connect(
-          host='localhost',
-          user='admin',
-          password='admin',
-          database='pro_expo',
-          port='5432'
-    )
-    cur=con.cursor()
-    check='''
-    select email_id from registration 
-    where Event_Name=%s;'''
-    cur.execute(check,(event_name,))
-    rows=cur.fetchall()
-    for i in rows:
-        print(i,user_email)
-        if i[0]==user_email:
-            cur.close()
-            con.close()
-            print(1)
-            return True
-    else:
-        cur.close()
-        con.close()
-        print(0)
-        return False
-
-def event_insert(user_email,event_name):
-
-    con=psycopg2.connect(
-        host='localhost',
-        user='admin',
-        password='admin',
-        database='pro_expo',
-        port='5432'
-    )
-    cur=con.cursor()
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS registration (
-        id SERIAL PRIMARY KEY,
-        email_id varchar(50)NOT NULL,
-        Event_Name VARCHAR(50)
-    );
-    """
-    cur.execute(create_table_query)
-    con.commit()
-
-    insert_query = """
-    INSERT INTO registration (email_id,Event_Name) VALUES (%s, %s);
-    """
-    if not event_exist(user_email,event_name):
-        print("done")
-        cur.execute(insert_query,(user_email,event_name))
-        con.commit()
-        cur.close()
-        con.close()
-        print(1)
-        return True
-    else:
-        cur.close()
-        con.close()
-        print(0)
-        return False
 
 
 

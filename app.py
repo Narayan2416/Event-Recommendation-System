@@ -1,8 +1,9 @@
-from flask import Flask,jsonify,request,render_template,redirect,url_for
-from data_base import user_insert, load_data,get_event
-from recommendation import recommend_by_query,recommend_similar_event
+from flask import Flask,jsonify,request,render_template,redirect,url_for,session
+from data_base import user_insert, load_data,get_event,save_search,save_user_interaction
+from recommendation import recommend_by_query,recommend_similar_event,recommend_based_on_prevSearches,recommend_based_on_user_interaction
 
 app=Flask(__name__)
+app.secret_key = "my_secret_key"
 
 # home-------------------------------------------------------------------------
 
@@ -13,6 +14,7 @@ def home():
         email=request.form.get('email')
         #password=request.form.get('password')
         if(user_insert(name,email)):
+            session['username'] = name
             return redirect(url_for("search",username=name))
     return render_template("home.html")
 
@@ -23,12 +25,23 @@ def load_data_route():
     data = load_data()
     return jsonify(data)
 
-@app.route("/<username>/event/<event_id>", methods=['GET'])
-def event_details(username, event_id):
-    # Fetch user-specific events from the database
-    event = get_event(event_id)
-    suggestions = recommend_similar_event(event_id)
-    return render_template("event_details.html",username=username, event=event, suggestions=suggestions)
+@app.route("/<username>/clicked_event/<event_id>", methods=['POST'])
+def clicked_event(username, event_id):
+    save_user_interaction(username, event_id, action="click")
+    return redirect(get_event(event_id=event_id)['url'])
+
+@app.route("/api/recommendation", methods=['POST'])
+def api_recommendation():
+    username = session['username']
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    # Call your recommendation logic here
+    print("is it ok?")
+    rec_search=recommend_based_on_prevSearches(username)
+    rec_interaction=recommend_based_on_user_interaction(username)
+    print("yes")
+    return jsonify({"searches": rec_search, "interests": rec_interaction})
 
 # main pages---------------------------------------------------------------------
 
@@ -41,14 +54,20 @@ def semantic_search():
     query=request.json.get('query', '')
     if not query:
         return jsonify([])
-    results = recommend_by_query(query,100)
+    save_search(session['username'], query)
+    results = recommend_by_query(query, 100)
     return jsonify(results)
+
+@app.route("/<username>/event/<event_id>", methods=['GET'])
+def event_details(username, event_id):
+    # Fetch user-specific events from the database
+    event = get_event(event_id)
+    save_user_interaction(session['username'], event_id,action="view")
+    suggestions = recommend_similar_event(event_id)
+    return render_template("event_details.html",username=username, event=event, suggestions=suggestions)
 
 @app.route("/<username>/recommender",methods=['GET','POST'])
 def recommender(username):
-    if request.method == 'POST':
-        # Handle recommendation logic here
-        pass
     return render_template("recommender.html",username=username)
 
 app.run(debug=True)
