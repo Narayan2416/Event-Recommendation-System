@@ -289,6 +289,21 @@ body {
     padding: 10px;
 }
 
+.show-more {
+    margin-top: 16px;
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.show-more:hover {
+    text-decoration: underline;
+}
+
+
 /* ================= EVENT CARD ENHANCEMENTS ================= */
 
 
