@@ -3,9 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Event Recommendation</title>
+    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
+    <link rel="stylesheet" href="{{ url_for('static', filename='recommender.css') }}">
 </head>
 <body>
-    
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-inner">
+                <div class="sidebar-title">
+                    <span class="menu-icon" id="main-menu">☰</span>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <a href="/" class="nav-item" data-page="home">
+                        <span class="icon">🏠</span>
+                        Home
+                    </a>
+
+                    <a href="/{{ username }}/search" class="nav-item" data-page="search">
+                        <span class="icon">📝</span>
+                        Explore Events
+                    </a>
+
+                    <a href="/{{ username }}/recommender" class="nav-item active" data-page="recommender">
+                        <span class="icon">▶</span>
+                        Recommended for You
+                    </a>
+
+                    <a href="/{{ username }}/view" class="nav-item" data-page="view">
+                        <span class="icon">👁</span>
+                        My Events
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
+
+        <main class="main-content" id="main">
+            <div class="page-wrapper">
+                <div class="searches">
+                    <h2>Based on your searches...</h2>
+                    <div class="searches-results" id="searches-results"> </div>
+                </div>
+                <div class="interests">
+                    <h2>Based on your interests...</h2>
+                    <div class="interests-results" id="interests-results"> </div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+<script>    
+    async function loadRecommendations() {
+        try {
+            const res = await fetch("/api/recommendation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to fetch recommendations");
+            }
+
+            const data = await res.json();
+
+            displayEvents(data.searches, "searches-results");
+            displayEvents(data.interests, "interests-results");
+
+        } catch (err) {
+            console.error(err);
+            document.querySelector(".searches-results").innerHTML =
+                "<p>Unable to load recommendations.</p>";
+            document.querySelector(".interests-results").innerHTML =
+                "<p>Unable to load recommendations.</p>";
+        }
+    }
+    loadRecommendations();
+
+    function isValidValue(val) {
+        return val && !["unknown", "not specified", "n/a"].includes(
+            String(val).toLowerCase()
+        );
+    }
+
+    function displayEvents(data, sectionId) {
+        const container = document.getElementById(sectionId);
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No events found.</p>";
+            return;
+        }
+
+        data.forEach(ev => {
+            const div = document.createElement("div");
+            div.className = "event";
+            const username="{{ username }}";
+
+            div.addEventListener("click", () => {
+                window.location.href = `/${username}/event/${ev.id}`;
+            });
+
+            const metaParts = [];
+            if (isValidValue(ev.mode_clean)) metaParts.push(ev.mode_clean);
+            if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
+
+            div.innerHTML = `
+                <div class="event-title">${ev.title}</div>
+                <div class="event-meta">
+                    ${metaParts.join(" • ")}
+                </div>
+                <div class="event-desc">
+                    ${ev.description?.substring(0, 100) ?? ""}...
+                </div>
+                <span class="badge">${ev.city ?? ""}</span>
+            `;
+
+            container.appendChild(div);
+        });
+    }
+
+    const sidebar = document.getElementById("sidebar");
+    const mainToggle = document.getElementById("main-menu");
+    const floatingToggle = document.getElementById("sidebar-toggle-floating");
+
+    function toggleSidebar() {
+        sidebar.classList.toggle("hidden");
+    }
+
+    mainToggle.addEventListener("click", toggleSidebar);
+    floatingToggle.addEventListener("click", toggleSidebar);
+
+    const path = window.location.pathname;
+
+    document.querySelectorAll(".nav-item").forEach(link => {
+        const page = link.dataset.page;
+
+        if (
+            (page === "home" && path === "/") ||
+            (page === "search" && path.endsWith("/search")) ||
+            (page === "recommender" && path.endsWith("/recommender")) ||
+            (page === "view" && path.endsWith("/view"))
+        ) {
+            link.classList.add("active");
+        } else {
+            link.classList.remove("active");
+        }
+    });
+</script>
 </body>
 </html>

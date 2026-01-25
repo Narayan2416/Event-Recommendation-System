@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+from data_base import get_recent_interactions,get_recent_searches
 from pymongo import MongoClient
 
 # ---------------- LOAD DATA ----------------
@@ -18,6 +18,63 @@ client = MongoClient("mongodb://localhost:27017/")
 db = client["event_recommendation"]
 user = db["users"]
 
+# helper functions-----------------------------------------------------------------------------------------------
+
+def remove_duplicate_interactions(interactions):
+    seen = set()
+    unique_interactions = []
+    for interaction in interactions:
+        if interaction['event_id'] not in seen:
+            unique_interactions.append(interaction)
+            seen.add(interaction['event_id'])
+    return unique_interactions
+
+def remove_duplicate_searches(searches):
+    seen = set()
+    unique_searches = []
+    for search in searches:
+        if search['query'] not in seen:
+            unique_searches.append(search)
+            seen.add(search['query'])
+    return unique_searches
+
+def interaction_vector(username):
+    interactions = get_recent_interactions(username)
+    interactions = remove_duplicate_interactions(interactions)
+    vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
+    divi=0
+    for i,interaction in enumerate(interactions):
+        idx = final_df.index[final_df['id'] == int(interaction['event_id'])]
+        if len(idx) == 0:
+            continue
+        event_index = idx[0]
+        val=embeddings[event_index]
+        if(interaction['action']=='click'):
+            weight=0.7
+        else:
+            weight=0.3
+        recency_weight = 1 / (i + 1)
+        vec+=val*weight*(recency_weight)
+        divi+=(weight*recency_weight)
+    if divi==0: return vec
+    return vec/divi
+
+def search_vector(username):
+    searches = get_recent_searches(username)
+    searches = remove_duplicate_searches(searches)
+    vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
+    divi = 0
+    for i, search in enumerate(searches):
+        query_emb = model.encode([search['query']])
+        query_emb = query_emb.squeeze()
+        recency_weight = 1 / (i + 1)
+        vec += query_emb * recency_weight
+        divi += recency_weight
+    if divi==0: return vec
+    return vec / divi
+
+#recommendation functions--------------------------------------------------------------------------------------
+
 def recommend_by_query(query, top_k=100):
     query_emb = model.encode([query])
     sims = cosine_similarity(query_emb, embeddings)[0]
@@ -27,23 +84,66 @@ def recommend_by_query(query, top_k=100):
         return []
 
     top_idx = valid_idx[np.argsort(sims[valid_idx])[::-1][:top_k]]
-    results = final_df.iloc[top_idx][["id", "title", "mode_clean", "price_type", "city", "description"]].copy()
+    results = final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].copy()
 
     results["score"] = (sims[top_idx] * 100).round(2)
 
     return results.to_dict(orient="records")
 
-
 #print(recommend_by_query("ai workshop", top_k=5))
 
-
 def recommend_similar_event(event_index, top_k=10):
-    id = final_df.index[final_df['id']==int(event_index)][0]
-    event_emb = embeddings[id].reshape(1, -1)
+    idx = final_df.index[final_df['id'] == int(event_index)]
+    if len(idx) == 0:
+        return []
+    event_index = idx[0]
+    event_emb = embeddings[event_index].reshape(1, -1)
     sims = cosine_similarity(event_emb, embeddings)[0]
 
     top_idx = sims.argsort()[::-1][1:top_k+1]
     return final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
+
+def recommend_based_on_user_interaction(username, top_k=10):
+    inter_vec = interaction_vector(username)
+    search_vec = search_vector(username)
+
+    vector = (0.7 * inter_vec + 0.3 * search_vec)
+    if (np.linalg.norm(vector) == 0): return []
+
+    score = cosine_similarity(vector.reshape(1, -1), embeddings)[0]
+    threshold = np.percentile(score, 80)
+    score[score < threshold] = -1
+    print(score)
+    interactions = get_recent_interactions(username)
+    seen_event_ids = set(int(i['event_id']) for i in interactions if i['action']=='click')
+    # Penalize already seen events
+    for idx, event_id in enumerate(final_df['id']):
+        if int(event_id) in seen_event_ids:
+            score[idx] = -1  # remove from recommendation
+
+    top_idx = score.argsort()[::-1][:top_k]
+    return final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
+
+def recommend_based_on_prevSearches(username):
+    search_vec=search_vector(username)
+    if np.linalg.norm(search_vec) == 0:
+        return []
+    
+    score=cosine_similarity(search_vec.reshape(1,-1),embeddings)[0]
+
+    threshold=np.percentile(score,85)
+    score[score<threshold]=-1
+    
+    interactions = get_recent_interactions(username)
+    seen_event_ids = set(int(i['event_id']) for i in interactions if i['action']=='click')
+    for idx, event_id in enumerate(final_df['id']):
+        if int(event_id) in seen_event_ids:
+            score[idx] = -1  # remove from recommendation
+
+    top_idx = score .argsort()[::-1][:10]
+    return final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
+
+print(recommend_based_on_user_interaction("naran"))
 
 def build_user_profile(event_indices):
     return embeddings[event_indices].mean(axis=0).reshape(1, -1)

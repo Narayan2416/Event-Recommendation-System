@@ -255,7 +255,11 @@ button:hover {
     padding: 16px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.04);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
+
 
 .event:hover {
     transform: translateY(-3px);
@@ -277,6 +281,10 @@ button:hover {
 .event-desc {
     font-size: 14px;
     color: #374151;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .badge {
@@ -288,6 +296,24 @@ button:hover {
     background: #eef2ff;
     color: #3730a3;
 }
+
+.event::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.event:hover::before {
+    opacity: 1;
+}
+
+
 
 /* ================= MOBILE ================= */
 @media (max-width: 768px) {
