@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='my_events.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-inner">
+                <div class="sidebar-title">
+                    <span class="menu-icon" id="main-menu">☰</span>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <a href="/" class="nav-item" data-page="home">
+                        <span class="icon">🏠</span>
+                        Home
+                    </a>
+
+                    <a href="/{{ username }}/search" class="nav-item" data-page="search">
+                        <span class="icon">📝</span>
+                        Explore Events
+                    </a>
+
+                    <a href="/{{ username }}/recommender" class="nav-item" data-page="recommender">
+                        <span class="icon">▶</span>
+                        Recommended for You
+                    </a>
+
+                    <a href="/{{ username }}/view" class="nav-item active" data-page="view">
+                        <span class="icon">👁</span>
+                        My Events
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
+
+        <main>
+            <div class="page-wrapper">
+            </div>
+        </main>
+</html>
