@@ -72,12 +72,27 @@ def get_recent_searches(username, limit=4):
         .limit(limit)
     )
 
-def build_Default_user_profile():
-    return {
-        "interests": [],
-        "location": "",
-        "event_history": []
-    }
+def get_top_interaction(top=10):
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$event_id",
+                "count": {"$sum": 1},
+                "last_interaction": {"$max": "$timestamp"}
+            }
+        },
+        {
+            "$sort": {
+                "count": -1,
+                "last_interaction": -1
+            }
+        },
+        {
+            "$limit": top
+        }
+    ]
+    return list(user_interaction.aggregate(pipeline))
+
 
 def user_exists(username, email):
     return users.find_one({

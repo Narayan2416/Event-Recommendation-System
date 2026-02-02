@@ -260,12 +260,14 @@ body {
 /* ================= RECOMMENDER SECTIONS ================= */
 
 .searches,
-.interests {
+.interests,
+.popular {
     margin-bottom: 40px;
 }
 
 .searches h2,
-.interests h2 {
+.interests h2,
+.popular h2 {
     font-size: 20px;
     font-weight: 600;
     color: #1f2937;
@@ -275,7 +277,8 @@ body {
 
 /* Grid for event cards */
 .searches-results,
-.interests-results {
+.interests-results,
+.popular-results{
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 18px;
@@ -283,7 +286,8 @@ body {
 
 /* Empty state */
 .searches-results p,
-.interests-results p {
+.interests-results p,
+.popular-results p {
     color: var(--muted);
     font-size: 14px;
     padding: 10px;

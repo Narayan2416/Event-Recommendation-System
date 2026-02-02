@@ -43,15 +43,20 @@
 
         <main class="main-content" id="main">
             <div class="page-wrapper">
-                <div class="searches">
+                <div class="searches", id="searches-section">
                     <h2>Based on your searches...</h2>
                     <div class="searches-results" id="searches-results"> </div>
                     <button id="searches-more" class="show-more">Show more</button>
                 </div>
-                <div class="interests">
+                <div class="interests" id="interests-section">
                     <h2>Based on your interests...</h2>
                     <div class="interests-results" id="interests-results"> </div>
                     <button id="interests-more" class="show-more">Show more</button>
+                </div>
+                <div class="popular" id="popular-section">
+                    <h2>Popular Events</h2>
+                    <div class="popular-results" id="popular-results"> </div>
+                    <button id="popular-more" class="show-more">Show more</button>
                 </div>
             </div>
         </main>
@@ -63,6 +68,17 @@
 
     const INITIAL_COUNT = 4;
 
+    function handleSection(events, sectionId, resultsId, buttonId) {
+        const section = document.getElementById(sectionId);
+
+        if (events.length > 0) {
+            section.style.display = "block";
+            renderSection(events, resultsId, buttonId);
+        } else {
+            section.style.display = "none";
+        }
+    }
+
     async function loadRecommendations() {
         const res = await fetch("/api/recommendation", {
             method: "POST",
@@ -73,17 +89,27 @@
 
         searchEvents = data.searches || [];
         interestEvents = data.interests || [];
+        popularEvents = data.popular || [];
 
-        renderSection(
+        handleSection(
             searchEvents,
+            "searches-section",
             "searches-results",
             "searches-more"
         );
 
-        renderSection(
+        handleSection(
             interestEvents,
+            "interests-section",
             "interests-results",
             "interests-more"
+        );
+
+        handleSection(
+            popularEvents,
+            "popular-section",
+            "popular-results",
+            "popular-more"
         );
     }
 
@@ -125,7 +151,6 @@
         container.innerHTML = "";
 
         if (data.length === 0) {
-            container.innerHTML = "<p>No events found.</p>";
             return;
         }
 
