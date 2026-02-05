@@ -1,5 +1,5 @@
 from flask import Flask,jsonify,request,render_template,redirect,url_for,session
-from data_base import user_insert, load_data,get_event,save_search,save_user_interaction
+from data_base import user_insert, load_data,get_event,save_search,save_user_interaction,get_clicked_events
 from recommendation import recommend_by_query,recommend_similar_event,recommend_based_on_prevSearches,recommend_based_on_user_interaction,popular_event_list
 import time
 
@@ -69,5 +69,10 @@ def event_details(username, event_id):
 @app.route("/<username>/recommender",methods=['GET','POST'])
 def recommender(username):
     return render_template("recommender.html",username=username)
+
+@app.route("/<username>/view", methods=['GET'])
+def view(username):
+    clicked_events = get_clicked_events(username)
+    return render_template("my_events.html", username=username, my_events=clicked_events)
 
 app.run(debug=True)
