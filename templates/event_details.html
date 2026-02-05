@@ -56,8 +56,10 @@
                     <div class="description">{{ event.description }}</div>
 
                     <div class="meta">
-                        <span>In-person</span>
-                        <span>Free</span>
+                        <span>{{ event.mode_clean }}</span>
+                        {% if event.price_type != "unknown" %}
+                            <span>{{ event.price_type }}</span>
+                        {% endif %}
                     </div>
 
                     <a href="/{{ username }}/clicked_event/{{ event.id }}" target="_blank" rel="noopener noreferrer">View Event</a>

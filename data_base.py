@@ -36,7 +36,7 @@ def format_datetime(dt_str):
 
 def get_event(id):
     event=data[data['id']==int(id)]
-    ans=event.iloc[0][['id','title','mode','price','description','location and city','url']].to_dict()
+    ans=event.iloc[0][['id','title','mode_clean','price_type','description','location and city','url']].to_dict()
     ans['start_datetime'] = format_datetime(event.iloc[0]['start_datetime'])
     ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])
     return ans
@@ -109,6 +109,19 @@ def user_insert(username, email):
         })
     return True
 
+def get_clicked_events(username):
+    l= list(
+        user_interaction
+        .find({"username": username, "action": "click"})
+        .sort("timestamp", -1)
+    )
+    ans=[]
+    for i in l:
+        event=data.loc[data['id']==int(i['event_id'])].to_dict(orient="records")
+        event[0]['start_datetime'] = format_datetime(event[0]['start_datetime'])
+        event[0]['end_datetime'] = format_datetime(event[0]['end_datetime'])
+        ans.append(event[0])
+    return ans
 
 
 
