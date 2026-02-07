@@ -103,7 +103,7 @@ def recommend_similar_event(event_index, top_k=10):
 
     top_idx = sims.argsort()[::-1][1:top_k+1]
     results= final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']]
-    results['score']=((sims[top_idx])+1/2).round(2)
+    results['score']=((sims[top_idx]+1)/2).round(2)
     results['source']='similar_events'
     return results.to_dict(orient="records")
 
@@ -132,7 +132,7 @@ def recommend_based_on_user_interaction(username,top_k=10):
     top_idx = top_idx[np.argsort(score[top_idx])[::-1]]
 
     results = final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']]
-    results['score']=((score[top_idx])+1/2).round(2)
+    results['score']=((score[top_idx]+1)/2).round(2)
     results['source']='interaction'
     return results.to_dict(orient="records") 
 
@@ -156,7 +156,7 @@ def recommend_based_on_prevSearches(username,top_k=10):
 
     top_idx = score.argsort()[::-1][:10]
     results= final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']]
-    results['score']=((score[top_idx])+1/2).round(2)
+    results['score']=((score[top_idx]+1)/2).round(2)
     results['source']='search'
     return results.to_dict(orient="records")
 

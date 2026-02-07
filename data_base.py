@@ -116,11 +116,15 @@ def get_clicked_events(username):
         .sort("timestamp", -1)
     )
     ans=[]
+    visi=[]
     for i in l:
+        if i['event_id'] in visi:
+            continue
         event=data.loc[data['id']==int(i['event_id'])].to_dict(orient="records")
         event[0]['start_datetime'] = format_datetime(event[0]['start_datetime'])
         event[0]['end_datetime'] = format_datetime(event[0]['end_datetime'])
         ans.append(event[0])
+        visi.append(i['event_id'])
     return ans
 
 
