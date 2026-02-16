@@ -78,7 +78,7 @@
         try {
             const res = await fetch("/load_data");   // Flask endpoint
             events = await res.json();
-
+            console.log("loaded events:",events);
             populateFilters(events);
             displayEvents(events);
         } catch (err) {
@@ -92,7 +92,7 @@
         const citySet = new Set();
 
         events.forEach(ev => {
-            if (ev["mode_clean"]) modeSet.add(ev["mode_clean"]);
+            if (ev["mode"]) modeSet.add(ev["mode"]);
             if (ev["price_type"]) priceSet.add(ev["price_type"]);
             if (ev["city"]) citySet.add(ev["city"]);
         });
@@ -142,7 +142,7 @@
         const source=semanticResults ?? events;
 
         const filtered = source.filter(ev =>
-            (!mode || ev["mode_clean"] === mode) &&
+            (!mode || ev["mode"] === mode) &&
             (!price || ev["price_type"] === price) &&
             (!city || ev["city"] === city)
         );
@@ -185,7 +185,7 @@
             });
 
             const metaParts = [];
-            if (isValidValue(ev.mode_clean)) metaParts.push(ev.mode_clean);
+            if (isValidValue(ev.mode)) metaParts.push(ev.mode);
             if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
 
             div.innerHTML = `
@@ -194,7 +194,7 @@
                     ${metaParts.join(" • ")}
                 </div>
                 <div class="event-desc">
-                    ${ev.description?.substring(0, 100) ?? ""}...
+                    ${ev.clean_desc?.substring(0, 100) ?? ""}...
                 </div>
                 <span class="badge">${ev.city ?? ""}</span>
             `;

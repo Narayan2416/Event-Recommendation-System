@@ -7,9 +7,9 @@ from pymongo import MongoClient
 import time
 
 # ---------------- LOAD DATA ----------------
-final_df = pd.read_csv("data/newevent_data.csv")
+final_df = pd.read_csv("data/event_data.csv",keep_default_na=False)
 
-embeddings = np.load("data/new_event_embeddings.npy")
+embeddings = np.load("data/event_embeddings2.npy")
 #embeddings= np.load("data/event_embeddings.npy") 
 
 assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embeddings"
@@ -87,7 +87,7 @@ def recommend_by_query(query, top_k=100):
         return []
 
     top_idx = valid_idx[np.argsort(sims[valid_idx])[::-1][:top_k]]
-    results = final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']].copy()
+    results = final_df.iloc[top_idx][['id','title','mode','price_type','clean_desc','city']].copy()
 
     return results.to_dict(orient="records")
 
@@ -102,7 +102,7 @@ def recommend_similar_event(event_index, top_k=10):
     sims = cosine_similarity(event_emb, embeddings)[0]
 
     top_idx = sims.argsort()[::-1][1:top_k+1]
-    results= final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']]
+    results= final_df.iloc[top_idx][['id','title','mode','price_type','clean_desc','city']]
     results['score']=((sims[top_idx]+1)/2).round(2)
     results['source']='similar_events'
     return results.to_dict(orient="records")
@@ -131,7 +131,7 @@ def recommend_based_on_user_interaction(username,top_k=10):
     top_idx = np.argpartition(score, -top_k)[-top_k:]
     top_idx = top_idx[np.argsort(score[top_idx])[::-1]]
 
-    results = final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']]
+    results = final_df.iloc[top_idx][['id','title','mode','price_type','clean_desc','city']]
     results['score']=((score[top_idx]+1)/2).round(2)
     results['source']='interaction'
     return results.to_dict(orient="records") 
@@ -155,7 +155,7 @@ def recommend_based_on_prevSearches(username,top_k=10):
     score[seen_mask] = -1
 
     top_idx = score.argsort()[::-1][:10]
-    results= final_df.iloc[top_idx][['id','title','mode_clean','price_type','description','city']]
+    results= final_df.iloc[top_idx][['id','title','mode','price_type','clean_desc','city']]
     results['score']=((score[top_idx]+1)/2).round(2)
     results['source']='search'
     return results.to_dict(orient="records")

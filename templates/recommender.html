@@ -164,7 +164,7 @@
             });
 
             const metaParts = [];
-            if (isValidValue(ev.mode_clean)) metaParts.push(ev.mode_clean);
+            if (isValidValue(ev.mode)) metaParts.push(ev.mode);
             if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
 
             div.innerHTML = `
@@ -173,7 +173,7 @@
                     ${metaParts.join(" • ")}
                 </div>
                 <div class="event-desc">
-                    ${ev.description?.substring(0, 100) ?? ""}...
+                    ${ev.clean_desc?.substring(0, 100) ?? ""}...
                 </div>
                 <span class="badge">${ev.city ?? ""}</span>
             `;

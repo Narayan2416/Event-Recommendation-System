@@ -14,11 +14,11 @@ user_interaction=db["user_interaction"]
 user_profile=db["user_profile"]
 search_history=db["search_history"]
 
-data=pd.read_csv("data/newevent_data.csv")
+data=pd.read_csv("data/event_data.csv",keep_default_na=False)
 
 def load_data():
     # Load your event data here
-    return data[['id','title','mode_clean','price_type','description','city']].to_dict(orient="records")
+    return data[['id','title','mode','price_type','clean_desc','city']].to_dict(orient="records")
 
 
 def format_datetime(dt_str):
@@ -36,9 +36,9 @@ def format_datetime(dt_str):
 
 def get_event(id):
     event=data[data['id']==int(id)]
-    ans=event.iloc[0][['id','title','mode_clean','price_type','description','location and city','url']].to_dict()
-    ans['start_datetime'] = format_datetime(event.iloc[0]['start_datetime'])
-    ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])
+    ans=event.iloc[0][['id','title','mode','price_type','clean_desc','location','url']].to_dict()
+    '''ans['start_datetime'] = format_datetime(event.iloc[0]['start_datetime'])
+    ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])'''
     return ans
 
 def save_search(username,query):
@@ -121,8 +121,8 @@ def get_clicked_events(username):
         if i['event_id'] in visi:
             continue
         event=data.loc[data['id']==int(i['event_id'])].to_dict(orient="records")
-        event[0]['start_datetime'] = format_datetime(event[0]['start_datetime'])
-        event[0]['end_datetime'] = format_datetime(event[0]['end_datetime'])
+        '''event[0]['start_datetime'] = format_datetime(event[0]['start_datetime'])
+        event[0]['end_datetime'] = format_datetime(event[0]['end_datetime'])'''
         ans.append(event[0])
         visi.append(i['event_id'])
     return ans

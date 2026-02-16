@@ -177,6 +177,8 @@ body {
     box-shadow: 0 15px 40px rgba(0,0,0,0.12);
     max-width: 1400px;
     margin: 0 auto;
+    max-height: 800px;
+    overflow-y: auto;
 }
 
 

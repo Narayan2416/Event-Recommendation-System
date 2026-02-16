@@ -45,7 +45,7 @@
                 {% for event in my_events %}
                     <div class="selected-event">
                         <div class="title">{{ event.title }}</div>
-                        <div class="location">{{ event['location and city'] }}</div>
+                        <div class="location">{{ event['location'] }}</div>
 
                         {% if event.start_datetime and event.end_datetime %}
                         <div class="datetime">{{ event.start_datetime }} – {{ event.end_datetime }}</div>
@@ -53,10 +53,10 @@
                         <div class="datetime">Starts at {{ event.start_datetime }}</div>
                         {% endif %}
 
-                        <div class="description">{{ event.description }}</div>
+                        <div class="description">{{ event.clean_desc }}</div>
 
                         <div class="meta">
-                            <span>{{ event.mode_clean }}</span>
+                            <span>{{ event.mode }}</span>
                             {% if event.price_type != "unknown" %}
                                 <span>{{ event.price_type }}</span>
                             {% endif %}
@@ -67,4 +67,34 @@
                 {% endfor %}
             </div>
         </main>
+<script>
+    const sidebar = document.getElementById("sidebar");
+    const mainToggle = document.getElementById("main-menu");
+    const floatingToggle = document.getElementById("sidebar-toggle-floating");
+
+    function toggleSidebar() {
+        sidebar.classList.toggle("hidden");
+    }
+
+    mainToggle.addEventListener("click", toggleSidebar);
+    floatingToggle.addEventListener("click", toggleSidebar);
+
+    const path = window.location.pathname;
+
+    document.querySelectorAll(".nav-item").forEach(link => {
+        const page = link.dataset.page;
+
+        if (
+            (page === "home" && path === "/") ||
+            (page === "search" && path.endsWith("/search")) ||
+            (page === "recommender" && path.endsWith("/recommender")) ||
+            (page === "view" && path.endsWith("/view"))
+        ) {
+            link.classList.add("active");
+        } else {
+            link.classList.remove("active");
+        }
+    });
+</script>
+</body>
 </html>

@@ -1,183 +1,188 @@
-from playwright.sync_api import sync_playwright, TimeoutError
-import pandas as pd
+from playwright.sync_api import sync_playwright
 import time
+import pandas as pd
+import re
 
 BASE_URL = "https://www.eventbrite.com/d/india/technology-events/"
-MAX_PAGES = 25          # pagination limit
-DETAIL_TIMEOUT = 45000  # ms
-SCROLL_WAIT = 2
+MAX_EVENTS = 2
 
-# ------------------ helpers ------------------
 
+# ---------------- DESCRIPTION ----------------
 def extract_description(page):
-    """
-    Try multiple known layouts for Eventbrite descriptions.
-    Returns text or None.
-    """
-    selectors = [
-        "[data-testid='structured-description']",
-        "section[aria-label='Event description']",
-        "div[data-automation='listing-event-description']",
-        "section:has(h2:has-text('About this event'))"
-    ]
 
-    for sel in selectors:
-        try:
-            page.wait_for_selector(sel, timeout=5000)
-            text = page.locator(sel).inner_text().strip()
-            if len(text) > 50:
-                return text
-        except:
-            continue
+    page.mouse.wheel(0, 5000)
+    time.sleep(2)
+
+    try:
+        page.click("button[data-heap-id*='Read more']", timeout=2000)
+    except:
+        pass
+
+    try:
+        page.wait_for_selector("div.event-description", timeout=5000)
+        text = page.locator("div.event-description").inner_text().strip()
+        if len(text) > 30:
+            return text
+    except:
+        pass
 
     return None
 
 
-def infer_is_free(price_text):
-    if not price_text:
+# ---------------- CITY ----------------
+def extract_city(location_text):
+    if not location_text:
         return None
-    p = price_text.lower()
-    return any(x in p for x in ["free", "₹0", "no cost"])
+
+    lines = location_text.split("\n")
+    last_line = lines[-1]
+
+    match = re.search(r"([A-Za-z ]+)(?=,)", last_line)
+    if match:
+        return match.group(0).strip()
+
+    return None
 
 
+# ---------------- MODE ----------------
 def infer_mode(location_text):
     if not location_text:
         return "unknown"
-    return "online" if "online" in location_text.lower() else "offline"
+
+    text = location_text.lower()
+    if "online" in text:
+        return "online"
+
+    return "offline"
 
 
-def safe_goto(page, url):
-    """
-    Retry navigation once if it fails.
-    """
-    for _ in range(2):
-        try:
-            page.goto(url, wait_until="domcontentloaded", timeout=DETAIL_TIMEOUT)
-            page.wait_for_selector("h1", timeout=15000)
-            return True
-        except:
-            time.sleep(2)
-    return False
+# ---------------- FEATURE EXTRACTION ----------------
+def extract_event_features(page, event_url):
 
+    # Title
+    try:
+        title = page.locator("h1").first.inner_text().strip()
+    except:
+        title = None
 
-# ------------------ main ------------------
+    # Date & Time
+    start_datetime = None
+    end_datetime = None
+    try:
+        times = page.locator("time").all_inner_texts()
+        if len(times) >= 1:
+            start_datetime = times[0]
+        if len(times) >= 2:
+            end_datetime = times[1]
+    except:
+        pass
 
-events_basic = []   # stage 1
-events_full = []    # stage 2
+    # Location
+    location = None
+    try:
+        raw_location = page.locator("div[class*='locationInfo']").inner_text().strip()
+        lines = [l.strip() for l in raw_location.split("\n") if l.strip()]
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
+        cleaned_lines = []
+        for line in lines:
+            if "Show map" in line or "How do you want" in line:
+                break
+            cleaned_lines.append(line)
 
-    # ---------- STAGE 1: PAGINATION ----------
-    print("\n🔹 Stage 1: Collecting event URLs")
+        # remove duplicates
+        location = "\n".join(dict.fromkeys(cleaned_lines))
 
-    for page_no in range(1, MAX_PAGES + 1):
-        url = f"{BASE_URL}?page={page_no}"
-        print(f"Page {page_no}: {url}")
+    except:
+        location = None
 
-        try:
-            page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        except TimeoutError:
-            print("  ⚠️ Page timeout, skipping")
-            continue
+    city = extract_city(location)
+    mode = infer_mode(location)
 
-        time.sleep(2)
-
-        # accept cookies once
-        try:
-            page.click("button:has-text('Accept')", timeout=3000)
-        except:
-            pass
-
-        links = page.query_selector_all("a[href*='/e/']")
-
-        if not links:
-            print("  ❌ No more events, stopping pagination")
-            break
-
-        for link in links:
-            try:
-                title = link.inner_text().strip()
-                href = link.get_attribute("href")
-                if title and href:
-                    events_basic.append({
-                        "title": title,
-                        "url": href
-                    })
-            except:
-                pass
-
-    print(f"\nCollected {len(events_basic)} event URLs")
-
-    # deduplicate
-    df_basic = pd.DataFrame(events_basic).drop_duplicates(subset=["url"])
-
-    # ---------- STAGE 2: EVENT DETAILS ----------
-    print("\n🔹 Stage 2: Extracting event details")
-
-    for i, row in df_basic.iterrows():
-        url = row["url"]
-        print(f"[{i+1}/{len(df_basic)}] {url}")
-
-        if not safe_goto(page, url):
-            print("  ⚠️ Skipping (navigation failed)")
-            continue
-
-        time.sleep(2)
-
-        # TITLE
-        try:
-            title = page.locator("h1").first.inner_text().strip()
-        except:
-            title = row["title"]
-
-        # DATE / TIME
-        try:
-            datetime = page.locator("time").first.inner_text().strip()
-        except:
-            datetime = None
-
-        # LOCATION
-        try:
-            location = page.locator("[data-testid='location-info']").inner_text().strip()
-        except:
-            location = "Online / Not specified"
-
-        # PRICE
+    # Price
+    price = "Unknown"
+    try:
+        price = page.locator("div[class*='priceTagWrapper']").inner_text().strip()
+    except:
         try:
             price = page.locator("text=Free").first.inner_text()
         except:
-            try:
-                price = page.locator("text=₹").first.inner_text()
-            except:
-                price = "Paid / Unknown"
+            pass
 
-        # DESCRIPTION (ROBUST)
-        description = extract_description(page)
+    # Description
+    description = extract_description(page)
 
-        events_full.append({
-            "title": title,
-            "datetime": datetime,
-            "location": location,
-            "mode": infer_mode(location),
-            "price": price,
-            "is_free": infer_is_free(price),
-            "description": description,
-            "url": url
-        })
+    return {
+        "title": title,
+        "location": location,
+        "city": city,
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "mode": mode,
+        "price": price,
+        "description": description,
+        "url": event_url
+    }
 
-        time.sleep(SCROLL_WAIT)  # rate limiting
+
+# ---------------- MAIN ----------------
+all_events = []
+
+with sync_playwright() as p:
+
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+
+    # STEP 1: Collect event URLs
+    page.goto(BASE_URL, timeout=60000)
+    page.wait_for_load_state("networkidle")
+    time.sleep(2)
+
+    links = page.query_selector_all("a[href*='/e/']")
+
+    event_urls = []
+
+    cards = page.locator("section:has-text('Just added')")
+
+    for i in range(cards.count()):
+        try:
+            link = cards.nth(i).locator("a[href*='/e/']").first.get_attribute("href")
+
+            if link:
+                if link.startswith("/"):
+                    link = "https://www.eventbrite.com" + link
+
+                event_urls.append(link)
+
+        except:
+            pass
+
+        if len(event_urls) >= MAX_EVENTS:
+            break
+
+
+    print(f"\nFound {len(event_urls)} events\n")
+
+    # STEP 2: Extract features
+    for idx, event_url in enumerate(event_urls):
+
+        print(f"Processing {idx+1}/{len(event_urls)}")
+
+        try:
+            page.goto(event_url, timeout=60000)
+            page.wait_for_load_state("networkidle")
+            time.sleep(2)
+        except:
+            continue
+
+        event_data = extract_event_features(page, event_url)
+        all_events.append(event_data)
 
     browser.close()
 
-# ------------------ SAVE ------------------
 
-df = pd.DataFrame(events_full)
-
-df.to_csv("eventbrite_india_technology_full.csv", index=False)
-
-print("\n✅ DONE")
-print("Rows:", len(df))
-print("With description:", df["description"].notna().sum())
-print(df.head())
+# STEP 3: Print results
+print("\nExtracted Events:\n")
+pd.DataFrame(all_events).to_csv("extracted_events.csv", index=True)
+for event in all_events:
+    print(event)
+    print("-" * 60)

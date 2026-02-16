@@ -53,10 +53,10 @@
                     <div class="datetime">Starts at {{ event.start_datetime }}</div>
                     {% endif %}
 
-                    <div class="description">{{ event.description }}</div>
+                    <div class="description">{{ event.clean_desc }}</div>
 
                     <div class="meta">
-                        <span>{{ event.mode_clean }}</span>
+                        <span>{{ event.mode }}</span>
                         {% if event.price_type != "unknown" %}
                             <span>{{ event.price_type }}</span>
                         {% endif %}
@@ -102,7 +102,7 @@
             });
 
             const metaParts = [];
-            if (isValidValue(ev.mode_clean)) metaParts.push(ev.mode_clean);
+            if (isValidValue(ev.mode)) metaParts.push(ev.mode);
             if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
 
             div.innerHTML = `
@@ -111,7 +111,7 @@
                     ${metaParts.join(" • ")}
                 </div>
                 <div class="event-desc">
-                    ${ev.description?.substring(0, 100) ?? ""}...
+                    ${ev.clean_desc?.substring(0, 100) ?? ""}...
                 </div>
                 <span class="badge">${ev.city ?? ""}</span>
             `;

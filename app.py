@@ -24,6 +24,7 @@ def home():
 @app.route("/load_data")
 def load_data_route():
     data = load_data()
+    #print(data[14])
     return jsonify(data)
 
 @app.route("/<username>/clicked_event/<event_id>", methods=['GET','POST'])
@@ -39,6 +40,7 @@ def api_recommendation():
     st=time.time()
     rec_search=recommend_based_on_prevSearches(username)
     rec_interaction=recommend_based_on_user_interaction(username)
+    print(rec_interaction[0])
     rec_popular=popular_event_list()
     print(f"Recommendation time: {time.time() - st} seconds")
     return jsonify({"searches": rec_search, "interests": rec_interaction, "popular": rec_popular})
@@ -72,7 +74,7 @@ def recommender(username):
 
 @app.route("/<username>/view", methods=['GET'])
 def view(username):
-    clicked_events = get_clicked_events(username)
+    clicked_events = get_clicked_events(username)   
     return render_template("my_events.html", username=username, my_events=clicked_events)
 
 app.run(debug=True)
