@@ -17,7 +17,7 @@ assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embedding
 model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 #model=SentenceTransformer('all-MiniLM-L6-v2')
 
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient("mongodb+srv://phnarayanamoorthy_db_user:SHL9fbveKeYZ2DAQ@cluster0.5ohobpv.mongodb.net/")
 db = client["event_recommendation"]
 user = db["users"]
 
