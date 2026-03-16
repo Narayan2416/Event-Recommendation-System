@@ -11,23 +11,27 @@
   <div class="page">
     <aside class="form-container">
       <form class="user_form" action="/" method="POST">
-        <h3>Welcome !</h3>
+        <h3>Welcome!</h3>
 
-        <input type="text" name="username" placeholder="Your name" required>
-        <input type="email" name="email" placeholder="Your email" required>
-
-        <button type="submit">Continue</button>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
 
         <div id="g_id_onload"
-            data-client_id="738347502101-dspntc69nqd1s1hevolbpgivlc5bttso.apps.googleusercontent.com"
-            data-callback="handleCredentialResponse">
+          data-client_id="{{ CLIENT_ID }}"
+          data-callback="handleCredentialResponse">
         </div>
 
         <div class="g_id_signin"></div>
 
+        <div class="divider">
+          <span>OR</span>
+        </div>
+
+        <input type="text" name="username" placeholder="Your name">
+        <input type="email" name="email" placeholder="Your email">
+
+        <button type="submit">Continue with Email</button>
         {% if error %}
-        <p class="error">{{ error }}</p>
+          <div class="error">{{ error }}</div>
         {% endif %}
       </form>
     </aside>
@@ -36,8 +40,8 @@
       <div class="hero-box">
         <h1>Welcome to<br>Event Recommendation System</h1>
         <p>
-          Discover events tailored to your interests — college activities,
-          workshops, hackathons, seminars and more.
+          Find workshops, hackathons, seminars and campus events
+          that match your interests.
         </p>
       </div>
     </section>
@@ -57,9 +61,7 @@
     .then(data => {
 
       if(data.success){
-        document.querySelector('input[name="username"]').value = data.name;
-        document.querySelector('input[name="email"]').value = data.email;
-
+          window.location.href = "/"+data.uid+"/search";
       } else {
         alert("Google login failed");
       }
