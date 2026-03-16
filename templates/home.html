@@ -17,6 +17,14 @@
         <input type="email" name="email" placeholder="Your email" required>
 
         <button type="submit">Continue</button>
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+        <div id="g_id_onload"
+            data-client_id="738347502101-dspntc69nqd1s1hevolbpgivlc5bttso.apps.googleusercontent.com"
+            data-callback="handleCredentialResponse">
+        </div>
+
+        <div class="g_id_signin"></div>
 
         {% if error %}
         <p class="error">{{ error }}</p>
@@ -33,8 +41,32 @@
         </p>
       </div>
     </section>
-
   </div>
+<script>
+  function handleCredentialResponse(response) {
+    fetch("/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        token: response.credential
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+      if(data.success){
+        document.querySelector('input[name="username"]').value = data.name;
+        document.querySelector('input[name="email"]').value = data.email;
+
+      } else {
+        alert("Google login failed");
+      }
+    })
+    .catch(err => console.error(err));
+  }
+</script>
 </body>
 
 

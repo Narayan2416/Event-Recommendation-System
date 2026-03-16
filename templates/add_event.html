@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {%for i in events%}
+        <div>
+            <h3>{{ i.name }}</h3>
+            <p>Date: {{ i.date }}</p>
+            <p>Location: {{ i.location }}</p>
+        </div>
+    {% endfor %}
+</body>
+</html>

@@ -2,6 +2,10 @@ from playwright.sync_api import sync_playwright
 import time
 import pandas as pd
 import re
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 BASE_URL = "https://www.eventbrite.com/d/india/technology-events/"
 MAX_EVENTS = 2
