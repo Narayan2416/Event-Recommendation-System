@@ -21,17 +21,17 @@
                         Home
                     </a>
 
-                    <a href="/{{ username }}/search" class="nav-item" data-page="search">
+                    <a href="/{{ uid }}/search" class="nav-item" data-page="search">
                         <span class="icon">📝</span>
                         Explore Events
                     </a>
 
-                    <a href="/{{ username }}/recommender" class="nav-item active" data-page="recommender">
+                    <a href="/{{ uid }}/recommender" class="nav-item active" data-page="recommender">
                         <span class="icon">▶</span>
                         Recommended for You
                     </a>
 
-                    <a href="/{{ username }}/view" class="nav-item" data-page="view">
+                    <a href="/{{ uid }}/view" class="nav-item" data-page="view">
                         <span class="icon">👁</span>
                         My Events
                     </a>
@@ -62,7 +62,7 @@
                         {% endif %}
                     </div>
 
-                    <a href="/{{ username }}/clicked_event/{{ event.id }}" target="_blank" rel="noopener noreferrer">View Event</a>
+                    <a href="/{{ uid }}/clicked_event/{{ event.id }}" target="_blank" rel="noopener noreferrer">View Event</a>
                 </div>
                 <div class="suggestions-wrapper">
                     <h3>Similar Events</h3>
@@ -95,10 +95,10 @@
         data.forEach(ev => {
             const div = document.createElement("div");
             div.className = "event";
-            const username="{{ username }}";
+            const uid="{{ uid }}";
 
             div.addEventListener("click", () => {
-                window.location.href = `/${username}/event/${ev.id}`;
+                window.location.href = `/${uid}/event/${ev.id}`;
             });
 
             const metaParts = [];

@@ -1,12 +1,12 @@
 import pandas as pd
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from datetime import datetime, timezone
 from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
-client = MongoClient("mongodb+srv://phnarayanamoorthy_db_user:SHL9fbveKeYZ2DAQ@cluster0.5ohobpv.mongodb.net/")
+client = MongoClient(os.getenv("MONGO_URI"))
 db = client["event_recommendation"]
 users = db["users"]
 user_interaction=db["user_interaction"]
@@ -40,33 +40,33 @@ def get_event(id):
     ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])'''
     return ans
 
-def save_search(username,query):
+def save_search(uid,query):
     search_history.insert_one({
-        "username": username,
+        "uid": uid,
         "query": query,
         "timestamp": datetime.now(timezone.utc)
     })
 
-def save_user_interaction(username, event_id, action):
+def save_user_interaction(uid, event_id, action):
     user_interaction.insert_one({
-        "username": username,
+        "uid": uid,
         "event_id": event_id,
         "action": action,
         "timestamp": datetime.now(timezone.utc)
     })
 
-def get_recent_interactions(username, limit=4):
+def get_recent_interactions(uid, limit=4):
     return list(
         user_interaction
-        .find({"username": username})
+        .find({"uid": uid})
         .sort("timestamp", -1)
         .limit(limit)
     )
 
-def get_recent_searches(username, limit=4):
+def get_recent_searches(uid, limit=4):
     return list(
         search_history
-        .find({"username": username})
+        .find({"uid": uid})
         .sort("timestamp", -1)
         .limit(limit)
     )
@@ -92,26 +92,32 @@ def get_top_interaction(top=10):
     ]
     return list(user_interaction.aggregate(pipeline))
 
-
-def user_exists(username, email):
-    return users.find_one({
+def get_userid(username,email):
+    user = users.find_one({
         "username": username,
         "email": email
+    })
+    return user['uid'] if user else None
+
+def user_exists(uid):
+    return users.find_one({
+        "uid": uid
     }) is not None
 
-def user_insert(username, email):
-    if not user_exists(username, email):
+def user_insert(uid, username, email):
+    if not user_exists(uid):
         users.insert_one({
             "username": username,
             "email": email,
+            "uid": uid,
             "timestamp": datetime.now(timezone.utc)
         })
     return True
 
-def get_clicked_events(username):
+def get_clicked_events(uid):
     l= list(
         user_interaction
-        .find({"username": username, "action": "click"})
+        .find({"uid": uid, "action": "click"})
         .sort("timestamp", -1)
     )
     ans=[]

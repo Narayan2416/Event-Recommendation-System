@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-from data_base import get_recent_interactions,get_recent_searches,get_top_interaction
+from data_base import get_recent_interactions,get_recent_searches,get_top_interaction,db,users
 from pymongo import MongoClient
 import time
 
@@ -16,10 +16,6 @@ assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embedding
 
 model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 #model=SentenceTransformer('all-MiniLM-L6-v2')
-
-client = MongoClient("mongodb+srv://phnarayanamoorthy_db_user:SHL9fbveKeYZ2DAQ@cluster0.5ohobpv.mongodb.net/")
-db = client["event_recommendation"]
-user = db["users"]
 
 # helper functions-----------------------------------------------------------------------------------------------
 
@@ -41,8 +37,8 @@ def remove_duplicate_searches(searches):
             seen.add(search['query'])
     return unique_searches
 
-def interaction_vector(username):
-    interactions = get_recent_interactions(username)
+def interaction_vector(uid):
+    interactions = get_recent_interactions(uid)
     interactions = remove_duplicate_interactions(interactions)
     vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
     divi=0
@@ -62,8 +58,8 @@ def interaction_vector(username):
     if divi==0: return vec
     return vec/divi
 
-def search_vector(username):
-    searches = get_recent_searches(username)
+def search_vector(uid):
+    searches = get_recent_searches(uid)
     searches = remove_duplicate_searches(searches)
     vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
     divi = 0
@@ -107,11 +103,11 @@ def recommend_similar_event(event_index, top_k=10):
     results['source']='similar_events'
     return results.to_dict(orient="records")
 
-def recommend_based_on_user_interaction(username,top_k=10):
-    seen_event_ids = {int(i['event_id']) for i in get_recent_interactions(username)}
+def recommend_based_on_user_interaction(uid,top_k=10):
+    seen_event_ids = {int(i['event_id']) for i in get_recent_interactions(uid)}
 
-    inter_vec = interaction_vector(username)
-    search_vec = search_vector(username)
+    inter_vec = interaction_vector(uid)
+    search_vec = search_vector(uid)
 
     if np.linalg.norm(inter_vec) == 0:
         return []
@@ -137,8 +133,8 @@ def recommend_based_on_user_interaction(username,top_k=10):
     return results.to_dict(orient="records") 
 
 
-def recommend_based_on_prevSearches(username,top_k=10):
-    search_vec=search_vector(username)
+def recommend_based_on_prevSearches(uid,top_k=10):
+    search_vec=search_vector(uid)
     if np.linalg.norm(search_vec) == 0:
         return []
     
@@ -147,8 +143,8 @@ def recommend_based_on_prevSearches(username,top_k=10):
     top_idx = np.argpartition(score, -top_k)[-top_k:]
     top_idx = top_idx[np.argsort(score[top_idx])[::-1]]
 
-    
-    interactions = get_recent_interactions(username)
+
+    interactions = get_recent_interactions(uid)
     seen_event_ids = set(int(i['event_id']) for i in interactions if i['action']=='click')
 
     seen_mask = final_df['id'].isin(seen_event_ids).values
