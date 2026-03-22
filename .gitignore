@@ -1,7 +1,7 @@
 .venv/
 .vscode/
 .env
-__pycache__/
+*__pycache__/
 *.pyc
 olddata/
 expo_model.pkl

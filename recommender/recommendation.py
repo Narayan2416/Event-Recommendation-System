@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-from data_base import get_recent_interactions,get_recent_searches,get_top_interaction,db,users
+from db.data_base import get_recent_interactions,get_recent_searches,get_top_interaction,db,users
 from pymongo import MongoClient
 import time
 
