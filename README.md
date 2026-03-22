@@ -93,7 +93,7 @@ MONGO_URI=your_mongodb_connection_string
 ## Run the Application
 
 ```bash
-python app.py
+python main.py
 ```
 
 
