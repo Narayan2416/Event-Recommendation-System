@@ -9,12 +9,10 @@ load_dotenv()
 
 bp = Blueprint("auth", __name__)
 
-app=Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
 CLIENT_ID = os.getenv("CLIENT_ID")
 
 
-@app.route("/",methods=['GET','POST'])
+@bp.route("/",methods=['GET','POST'])
 def home():
     if request.method=='POST':
         name=request.form.get('username')
@@ -30,7 +28,7 @@ def home():
     return render_template("home.html",CLIENT_ID=CLIENT_ID)
 
 
-@app.route("/login", methods=["POST"])
+@bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
     token = data["token"]
