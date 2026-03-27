@@ -10,24 +10,22 @@ load_dotenv()
 
 bp = Blueprint("services", __name__)
 
-app=Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
 CLIENT_ID = os.getenv("CLIENT_ID")
 
 # helper routes-----------------------------------------------------------------
 
-@app.route("/load_data")
+@bp.route("/load_data")
 def load_data_route():
     data = load_data()
     #print(data[14])
     return jsonify(data)
 
-@app.route("/<uid>/clicked_event/<event_id>", methods=['GET','POST'])
+@bp.route("/<uid>/clicked_event/<event_id>", methods=['GET','POST'])
 def clicked_event(uid, event_id):
     save_user_interaction(uid, event_id, action="click")
     return redirect(get_event(event_id)['url'])
 
-@app.route("/api/recommendation", methods=['GET','POST'])
+@bp.route("/api/recommendation", methods=['GET','POST'])
 def api_recommendation():
     uid = session.get('uid')
     if uid is None:
@@ -42,11 +40,11 @@ def api_recommendation():
 
 # main pages---------------------------------------------------------------------
 
-@app.route("/admin", methods=['GET','POST'])
+@bp.route("/admin", methods=['GET','POST'])
 def admin():
     return render_template("admin.html")
 
-@app.route("/admin/add_event",methods=['GET','POST'])
+@bp.route("/admin/add_event",methods=['GET','POST'])
 def add_event():
     events=[]
     if request.method == 'POST':
@@ -54,11 +52,11 @@ def add_event():
         return redirect(url_for("add_event"),events=events)
     return render_template("add_event.html", events=events) #admin adding event page
 
-@app.route("/<uid>/search",methods=['GET','POST'])
+@bp.route("/<uid>/search",methods=['GET','POST'])
 def search(uid):
     return render_template("search.html",uid=uid)
 
-@app.route("/semantic_search", methods=['POST'])
+@bp.route("/semantic_search", methods=['POST'])
 def semantic_search():
     query=request.json.get('query', '')
     if not query:
@@ -67,7 +65,7 @@ def semantic_search():
     results = recommend_by_query(query, 100)
     return jsonify(results)
 
-@app.route("/<uid>/event/<event_id>", methods=['GET'])
+@bp.route("/<uid>/event/<event_id>", methods=['GET'])
 def event_details(uid, event_id):
     # Fetch user-specific events from the database
     event = get_event(event_id)
@@ -75,13 +73,13 @@ def event_details(uid, event_id):
     suggestions = recommend_similar_event(event_id)
     return render_template("event_details.html",uid=uid, event=event, suggestions=suggestions)
 
-@app.route("/<uid>/recommender",methods=['GET','POST'])
+@bp.route("/<uid>/recommender",methods=['GET','POST'])
 def recommender(uid):
     return render_template("recommender.html",uid=uid)
 
-@app.route("/<uid>/view", methods=['GET'])
+@bp.route("/<uid>/view", methods=['GET'])
 def view(uid):
     clicked_events = get_clicked_events(uid)   
     return render_template("my_events.html", uid=uid, my_events=clicked_events)
 
-app.run(debug=True)
+
