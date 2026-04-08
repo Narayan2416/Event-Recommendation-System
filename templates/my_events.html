@@ -3,98 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Recommender</title>
+    <title>My Events — EventIQ</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='my_events.css') }}">
 </head>
 <body>
-    <div class="app-layout">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-inner">
-                <div class="sidebar-title">
-                    <span class="menu-icon" id="main-menu">☰</span>
-                </div>
+<div class="app-layout">
 
-                <nav class="sidebar-nav">
-                    <a href="/" class="nav-item" data-page="home">
-                        <span class="icon">🏠</span>
-                        Home
-                    </a>
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          EventIQ
+          <span>Discover · Attend · Grow</span>
+        </div>
+        <span class="menu-icon" id="main-menu">☰</span>
+      </div>
 
-                    <a href="/{{ uid }}/search" class="nav-item" data-page="search">
-                        <span class="icon">📝</span>
-                        Explore Events
-                    </a>
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item" data-page="home">
+          <span class="icon">🏠</span> Home
+        </a>
+        <a href="/{{ uid }}/search" class="nav-item" data-page="search">
+          <span class="icon">🔍</span> Explore Events
+        </a>
+        <a href="/{{ uid }}/recommender" class="nav-item" data-page="recommender">
+          <span class="icon">✦</span> Recommended
+        </a>
+        <a href="/{{ uid }}/view" class="nav-item active" data-page="view">
+          <span class="icon">📌</span> My Events
+        </a>
+      </nav>
+    </div>
+  </aside>
 
-                    <a href="/{{ uid }}/recommender" class="nav-item" data-page="recommender">
-                        <span class="icon">▶</span>
-                        Recommended for You
-                    </a>
+  <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
 
-                    <a href="/{{ uid }}/view" class="nav-item active" data-page="view">
-                        <span class="icon">👁</span>
-                        My Events
-                    </a>
-                </nav>
+  <!-- ── Main ── -->
+  <main class="main-content">
+    <div class="page-wrapper">
+
+      <!-- Header -->
+      <div class="my-events-header">
+        <div>
+          <h1>My Events</h1>
+          <p>Events you've saved or registered for.</p>
+        </div>
+        {% if my_events %}
+          <div class="events-count">{{ my_events | length }} event{{ 's' if my_events | length != 1 }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Feed -->
+      {% if my_events %}
+        <div class="events-feed">
+          {% for event in my_events %}
+            <div class="selected-event" onclick="handleClick('{{ event.id }}')">
+              <div class="title">{{ event.title }}</div>
+              <div class="location">{{ event['location'] }}</div>
+
+              {% if event.start_datetime and event.end_datetime %}
+                <div class="datetime">{{ event.start_datetime }} – {{ event.end_datetime }}</div>
+              {% elif event.start_datetime %}
+                <div class="datetime">Starts at {{ event.start_datetime }}</div>
+              {% endif %}
+
+              <div class="description">{{ event.clean_desc }}</div>
+
+              <div class="meta">
+                <span>{{ event.mode }}</span>
+                {% if event.price_type != "unknown" %}
+                  <span>{{ event.price_type }}</span>
+                {% endif %}
+              </div>
+
+              <a href="/{{ uid }}/clicked_event/{{ event.id }}" target="_blank" rel="noopener noreferrer">
+                View Event
+              </a>
             </div>
-        </aside>
+          {% endfor %}
+        </div>
 
-        <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
+      {% else %}
+        <!-- Empty state -->
+        <div class="empty-state">
+          <div class="empty-icon">📌</div>
+          <h3>No events yet</h3>
+          <p>Events you explore and register for will appear here.</p>
+          <a href="/{{ uid }}/search">Browse Events</a>
+        </div>
+      {% endif %}
 
-        <main class="main-content">
-            <div class="page-wrapper">
-                {% for event in my_events %}
-                    <div class="selected-event">
-                        <div class="title">{{ event.title }}</div>
-                        <div class="location">{{ event['location'] }}</div>
+    </div>
+  </main>
+</div>
 
-                        {% if event.start_datetime and event.end_datetime %}
-                        <div class="datetime">{{ event.start_datetime }} – {{ event.end_datetime }}</div>
-                        {% elif event.start_datetime %}
-                        <div class="datetime">Starts at {{ event.start_datetime }}</div>
-                        {% endif %}
-
-                        <div class="description">{{ event.clean_desc }}</div>
-
-                        <div class="meta">
-                            <span>{{ event.mode }}</span>
-                            {% if event.price_type != "unknown" %}
-                                <span>{{ event.price_type }}</span>
-                            {% endif %}
-                        </div>
-
-                        <a href="/{{ uid }}/clicked_event/{{ event.id }}" target="_blank" rel="noopener noreferrer">View Event</a>
-                    </div>
-                {% endfor %}
-            </div>
-        </main>
 <script>
-    const sidebar = document.getElementById("sidebar");
-    const mainToggle = document.getElementById("main-menu");
-    const floatingToggle = document.getElementById("sidebar-toggle-floating");
+  const sidebar        = document.getElementById("sidebar");
+  const mainToggle     = document.getElementById("main-menu");
+  const floatingToggle = document.getElementById("sidebar-toggle-floating");
+  const toggleSidebar  = () => sidebar.classList.toggle("hidden");
+  mainToggle.addEventListener("click", toggleSidebar);
+  floatingToggle.addEventListener("click", toggleSidebar);
 
-    function toggleSidebar() {
-        sidebar.classList.toggle("hidden");
-    }
+  const path = window.location.pathname;
+  document.querySelectorAll(".nav-item").forEach(link => {
+    const page = link.dataset.page;
+    link.classList.toggle("active",
+      (page === "home"        && path === "/") ||
+      (page === "search"      && path.endsWith("/search")) ||
+      (page === "recommender" && path.endsWith("/recommender")) ||
+      (page === "view"        && path.endsWith("/view"))
+    );
+  });
 
-    mainToggle.addEventListener("click", toggleSidebar);
-    floatingToggle.addEventListener("click", toggleSidebar);
+  function handleClick(eventId) {
+    const uid = "{{ uid }}";
+    window.location.href = `/${uid}/event/${eventId}`;
+  }
 
-    const path = window.location.pathname;
-
-    document.querySelectorAll(".nav-item").forEach(link => {
-        const page = link.dataset.page;
-
-        if (
-            (page === "home" && path === "/") ||
-            (page === "search" && path.endsWith("/search")) ||
-            (page === "recommender" && path.endsWith("/recommender")) ||
-            (page === "view" && path.endsWith("/view"))
-        ) {
-            link.classList.add("active");
-        } else {
-            link.classList.remove("active");
-        }
-    });
 </script>
 </body>
 </html>
