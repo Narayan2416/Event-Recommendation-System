@@ -2,30 +2,33 @@ import pandas as pd
 import numpy as np
 from db.data_base import get_recent_interactions,get_recent_searches,get_top_interaction
 import os
-import requests
+from huggingface_hub import InferenceClient
 import time
 
 # ---------------- LOAD DATA ----------------
 final_df = pd.read_csv("data/event_data.csv",keep_default_na=False)
 
-embeddings = np.load("data/event_embeddings2.npy")
+embeddings = np.load("data/event_embeddings2.npy").astype(np.float32)
 #embeddings= np.load("data/event_embeddings.npy") 
 
 assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embeddings"
 
 #model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
-API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+# ------------------ HF CLIENT ------------------
+client = InferenceClient(
+    model="sentence-transformers/all-mpnet-base-v2",
+    token=os.getenv("HF_TOKEN")
+)
 
-headers = {
-    "Authorization": f"Bearer {os.environ['HF_TOKEN']}",
-}
-#model=SentenceTransformer('all-MiniLM-L6-v2')
 
 # helper functions-----------------------------------------------------------------------------------------------
 
+# ------------------ COSINE SIMILARITY ------------------
 def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    a_norm = np.linalg.norm(a, axis=1, keepdims=True)
+    b_norm = np.linalg.norm(b, axis=1)
+    return np.dot(a, b.T) / (a_norm * b_norm + 1e-10)
 
 def remove_duplicate_interactions(interactions):
     seen = set()
@@ -45,22 +48,20 @@ def remove_duplicate_searches(searches):
             seen.add(search['query'])
     return unique_searches
 
-
+hash={}
 def get_embedding(text):
-    while True:
-        response = requests.post(
-            API_URL,
-            headers=headers,
-            json={"inputs": text}
-        )
-        result = response.json()
+    if text in hash:
+        return hash[text]
 
-        # Handle model loading
-        if isinstance(result, dict) and "error" in result:
-            print("Model loading... retrying")
-            time.sleep(2)
-        else:
-            return result[0]   # flatten
+    emb = client.feature_extraction(text)
+
+    # Handle nested output
+    emb = emb[0] if isinstance(emb[0], list) else emb
+
+    hash[text] = emb
+    return emb
+
+
 
 def interaction_vector(uid):
     interactions = get_recent_interactions(uid)
@@ -89,7 +90,7 @@ def search_vector(uid):
     vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
     divi = 0
     for i, search in enumerate(searches):
-        query_emb = get_embedding(search['query'])
+        query_emb = np.array(get_embedding(search['query'])).reshape(1, -1)
         query_emb = query_emb.squeeze()
         recency_weight = 1 / (i + 1)
         vec += query_emb * recency_weight
@@ -100,14 +101,10 @@ def search_vector(uid):
 #recommendation functions--------------------------------------------------------------------------------------
 
 def recommend_by_query(query, top_k=100):
-    query_emb = get_embedding(query)
+    query_emb = np.array(get_embedding(query)).reshape(1, -1)
     sims = cosine_similarity(query_emb, embeddings)[0]
 
-    valid_idx = np.where(sims > 0.25)[0]
-    if len(valid_idx) == 0:
-        return []
-
-    top_idx = valid_idx[np.argsort(sims[valid_idx])[::-1][:top_k]]
+    top_idx = np.argsort(sims)[::-1][:top_k]
     results = final_df.iloc[top_idx][['id','title','mode','price_type','clean_desc','city']].copy()
 
     return results.to_dict(orient="records")
