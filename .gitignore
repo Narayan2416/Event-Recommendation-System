@@ -1,0 +1,12 @@
+.venv/
+.vscode/
+.env
+*__pycache__/
+*.pyc
+olddata/
+expo_model.pkl
+downloading_model.py
+data_viewer.ipynb
+db_tester.py
+extracted_events.json
+scrappers/scrapper1.py

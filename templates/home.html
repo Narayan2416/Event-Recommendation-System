@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventIQ — Discover Events That Matter</title>
+    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+</head>
+<body>
+  <div class="page">
+
+    <!-- ── LEFT: Auth Panel ── -->
+    <aside class="form-container">
+      <form class="user_form" action="/" method="POST">
+        <h3>Sign in</h3>
+        <p class="form-subtitle">Access curated events tailored to your interests and goals.</p>
+
+        <!-- Google Sign-in -->
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+        <div id="g_id_onload"
+          data-client_id="{{ CLIENT_ID }}"
+          data-callback="handleCredentialResponse">
+        </div>
+        <div class="g_id_signin"
+          data-type="standard"
+          data-theme="outline"
+          data-size="large"
+          data-width="340">
+        </div>
+
+        <div class="divider"><span>or continue with email</span></div>
+
+        <input type="text"  name="username" placeholder="Your name" autocomplete="name">
+        <input type="email" name="email"    placeholder="Email address" autocomplete="email">
+
+        <button type="submit">Continue &rarr;</button>
+
+        {% if error %}
+          <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <p class="form-footer">
+          By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+        </p>
+      </form>
+    </aside>
+
+    <!-- ── RIGHT: Hero Panel ── -->
+    <section class="right-panel">
+      <div class="hero-box">
+        <div class="hero-tag">✦ Powered by AI Recommendations</div>
+
+        <h1>
+          Discover Events<br>
+          Built for <span class="highlight">Your&nbsp;Growth</span>
+        </h1>
+
+        <p>
+          Find workshops, hackathons, seminars and campus events
+          that align with your passions — curated by AI, personalised for you.
+        </p>
+
+        <div class="feature-pills">
+          <span class="pill"><span class="pill-icon">🎯</span> Personalised picks</span>
+          <span class="pill"><span class="pill-icon">⚡</span> Real-time discovery</span>
+          <span class="pill"><span class="pill-icon">🎓</span> Student & Pro events</span>
+          <span class="pill"><span class="pill-icon">🗓</span> Upcoming deadlines</span>
+        </div>
+      </div>
+
+      <!-- Floating Stats -->
+      <div class="stats-card">
+        <div class="stat-item">
+          <div class="stat-number">12<span>k+</span></div>
+          <div class="stat-label">Events</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">98<span>%</span></div>
+          <div class="stat-label">Match rate</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">4<span>.8★</span></div>
+          <div class="stat-label">Rating</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function handleCredentialResponse(response) {
+      fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: response.credential })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = "/" + data.uid + "/search";
+        } else {
+          alert("Google login failed");
+        }
+      })
+      .catch(err => console.error(err));
+    }
+  </script>
+</body>
+</html>

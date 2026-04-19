@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommended for You — EventIQ</title>
+    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
+    <link rel="stylesheet" href="{{ url_for('static', filename='recommender.css') }}">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          EventIQ
+          <span>Discover · Attend · Grow</span>
+        </div>
+        <span class="menu-icon" id="main-menu">☰</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item" data-page="home">
+          <span class="icon">🏠</span> Home
+        </a>
+        <a href="/{{ uid }}/search" class="nav-item" data-page="search">
+          <span class="icon">🔍</span> Explore Events
+        </a>
+        <a href="/{{ uid }}/recommender" class="nav-item active" data-page="recommender">
+          <span class="icon">✦</span> Recommended
+        </a>
+        <a href="/{{ uid }}/view" class="nav-item" data-page="view">
+          <span class="icon">📌</span> My Events
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
+
+  <!-- ── Main ── -->
+  <main class="main-content" id="main">
+    <div class="page-wrapper">
+
+      <!-- Header -->
+      <div class="recommender-header">
+        <div>
+          <h1>Recommended for You</h1>
+          <p>Curated picks based on your searches, interests, and what's trending.</p>
+        </div>
+        <div class="ai-badge">AI-Powered Picks</div>
+      </div>
+
+      <!-- Sections -->
+      <section class="searches" id="searches-section">
+        <div class="section-header">
+          <h2>Based on your searches</h2>
+          <button id="searches-more" class="show-more">Show more</button>
+        </div>
+        <div class="searches-results" id="searches-results"></div>
+      </section>
+
+      <section class="interests" id="interests-section">
+        <div class="section-header">
+          <h2>Based on your interests</h2>
+          <button id="interests-more" class="show-more">Show more</button>
+        </div>
+        <div class="interests-results" id="interests-results"></div>
+      </section>
+
+      <section class="popular" id="popular-section">
+        <div class="section-header">
+          <h2>Popular Events</h2>
+          <button id="popular-more" class="show-more">Show more</button>
+        </div>
+        <div class="popular-results" id="popular-results"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  let searchEvents = [], interestEvents = [], popularEvents = [];
+  const INITIAL_COUNT = 4;
+
+  function handleSection(events, sectionId, resultsId, buttonId) {
+    const section = document.getElementById(sectionId);
+    if (events.length > 0) {
+      section.style.display = "block";
+      renderSection(events, resultsId, buttonId);
+    } else {
+      section.style.display = "none";
+    }
+  }
+
+  async function loadRecommendations() {
+    const res = await fetch("/api/recommendation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    const data = await res.json();
+
+    searchEvents   = data.searches  || [];
+    interestEvents = data.interests || [];
+    popularEvents  = data.popular   || [];
+
+    handleSection(searchEvents,   "searches-section",  "searches-results",  "searches-more");
+    handleSection(interestEvents, "interests-section", "interests-results", "interests-more");
+    handleSection(popularEvents,  "popular-section",   "popular-results",   "popular-more");
+  }
+
+  loadRecommendations();
+
+  function renderSection(events, containerId, buttonId, expanded = false) {
+    const container = document.getElementById(containerId);
+    const button    = document.getElementById(buttonId);
+    container.innerHTML = "";
+    displayEvents(expanded ? events : events.slice(0, INITIAL_COUNT), containerId);
+
+    if (events.length > INITIAL_COUNT) {
+      button.style.display = "inline-flex";
+      button.textContent = expanded ? "Show less ↑" : "Show more ↓";
+    } else {
+      button.style.display = "none";
+    }
+    button.onclick = () => renderSection(events, containerId, buttonId, !expanded);
+  }
+
+  function isValidValue(val) {
+    return val && !["unknown", "not specified", "n/a"].includes(String(val).toLowerCase());
+  }
+
+  function displayEvents(data, sectionId) {
+    const container = document.getElementById(sectionId);
+    container.innerHTML = "";
+    if (data.length === 0) return;
+
+    data.forEach(ev => {
+      const div = document.createElement("div");
+      div.className = "event";
+      const uid = "{{ uid }}";
+      div.addEventListener("click", () => { window.location.href = `/${uid}/event/${ev.id}`; });
+
+      const metaParts = [];
+      if (isValidValue(ev.mode)) metaParts.push(ev.mode);
+      if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
+
+      div.innerHTML = `
+        <div class="event-title">${ev.title}</div>
+        <div class="event-meta">${metaParts.join(" · ")}</div>
+        <div class="event-desc">${ev.clean_desc?.substring(0, 110) ?? ""}…</div>
+        <span class="badge">${ev.city ?? ""}</span>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  /* Sidebar */
+  const sidebar        = document.getElementById("sidebar");
+  const mainToggle     = document.getElementById("main-menu");
+  const floatingToggle = document.getElementById("sidebar-toggle-floating");
+  const toggleSidebar  = () => sidebar.classList.toggle("hidden");
+  mainToggle.addEventListener("click", toggleSidebar);
+  floatingToggle.addEventListener("click", toggleSidebar);
+
+  /* Active nav */
+  const path = window.location.pathname;
+  document.querySelectorAll(".nav-item").forEach(link => {
+    const page = link.dataset.page;
+    link.classList.toggle("active",
+      (page === "home"        && path === "/") ||
+      (page === "search"      && path.endsWith("/search")) ||
+      (page === "recommender" && path.endsWith("/recommender")) ||
+      (page === "view"        && path.endsWith("/view"))
+    );
+  });
+</script>
+</body>
+</html>

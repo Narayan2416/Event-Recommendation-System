@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Events — EventIQ</title>
+    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
+    <link rel="stylesheet" href="{{ url_for('static', filename='search.css') }}">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          EventIQ
+          <span>Discover · Attend · Grow</span>
+        </div>
+        <span class="menu-icon" id="main-menu">☰</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item" data-page="home">
+          <span class="icon">🏠</span> Home
+        </a>
+        <a href="/{{ uid }}/search" class="nav-item" data-page="search">
+          <span class="icon">🔍</span> Explore Events
+        </a>
+        <a href="/{{ uid }}/recommender" class="nav-item" data-page="recommender">
+          <span class="icon">✦</span> Recommended
+        </a>
+        <a href="/{{ uid }}/view" class="nav-item" data-page="view">
+          <span class="icon">📌</span> My Events
+        </a>
+      </nav>
+
+    </div>
+  </aside>
+
+  <button id="sidebar-toggle-floating" class="sidebar-float-btn">☰</button>
+
+  <!-- ── Main ── -->
+  <main class="main-content" id="main">
+    <div class="page-wrapper">
+
+      <!-- Header -->
+      <div class="search-header">
+        <h2>Explore Events</h2>
+        <p class="search-subtitle">Search from thousands of curated workshops, hackathons, and seminars.</p>
+      </div>
+
+      <!-- Search Form -->
+      <form id="search-form">
+        <div class="search-input-wrapper">
+          <input type="text" id="search" placeholder="Search by topic, skill, or keyword…" autocomplete="off">
+        </div>
+        <button type="submit">Search</button>
+      </form>
+
+      <!-- Filters -->
+      <div class="filters">
+        <select id="modeFilter">
+          <option value="">All Modes</option>
+        </select>
+        <select id="priceFilter">
+          <option value="">All Price Types</option>
+        </select>
+        <select id="cityFilter">
+          <option value="">All Cities</option>
+        </select>
+        <div class="results-count" id="results-count">Loading…</div>
+      </div>
+
+      <!-- Results -->
+      <div id="results">Loading events…</div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  let events = [];
+  let semanticResults = null;
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const res = await fetch("/load_data");
+      events = await res.json();
+      populateFilters(events);
+      displayEvents(events);
+    } catch (err) {
+      document.getElementById("results").innerHTML = "<p>Failed to load events.</p>";
+    }
+  });
+
+  function populateFilters(events) {
+    const modeSet = new Set(), priceSet = new Set(), citySet = new Set();
+    events.forEach(ev => {
+      if (ev.mode) modeSet.add(ev.mode);
+      if (ev.price_type) priceSet.add(ev.price_type);
+      if (ev.city) citySet.add(ev.city);
+    });
+    priceSet.delete("unknown");
+    fillSelect("modeFilter", modeSet);
+    fillSelect("priceFilter", priceSet);
+    fillSelect("cityFilter", citySet);
+  }
+
+  function fillSelect(id, values) {
+    const select = document.getElementById(id);
+    values.forEach(val => {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      select.appendChild(opt);
+    });
+  }
+
+  async function searchWithQuery() {
+    const query = document.getElementById("search").value.trim();
+    if (!query) { semanticResults = null; applyFilters(); return; }
+    const res = await fetch("/semantic_search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+    semanticResults = await res.json();
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const mode  = document.getElementById("modeFilter").value;
+    const price = document.getElementById("priceFilter").value;
+    const city  = document.getElementById("cityFilter").value;
+    const source = semanticResults ?? events;
+    const filtered = source.filter(ev =>
+      (!mode  || ev.mode === mode) &&
+      (!price || ev.price_type === price) &&
+      (!city  || ev.city === city)
+    );
+    displayEvents(filtered);
+  }
+
+  document.getElementById("search-form").addEventListener("submit", e => { e.preventDefault(); searchWithQuery(); });
+  document.getElementById("modeFilter").addEventListener("change", applyFilters);
+  document.getElementById("priceFilter").addEventListener("change", applyFilters);
+  document.getElementById("cityFilter").addEventListener("change", applyFilters);
+
+  function isValidValue(val) {
+    return val && !["unknown", "not specified", "n/a"].includes(String(val).toLowerCase());
+  }
+
+  function displayEvents(data) {
+    const container = document.getElementById("results");
+    const counter   = document.getElementById("results-count");
+    container.innerHTML = "";
+    counter.textContent = `${data.length} event${data.length !== 1 ? 's' : ''} found`;
+
+    if (data.length === 0) {
+      container.innerHTML = "<p>No events match your search. Try adjusting the filters.</p>";
+      return;
+    }
+
+    data.forEach(ev => {
+      const div = document.createElement("div");
+      div.className = "event";
+      const uid = "{{ uid }}";
+      div.addEventListener("click", () => { window.location.href = `/${uid}/event/${ev.id}`; });
+
+      const metaParts = [];
+      if (isValidValue(ev.mode)) metaParts.push(ev.mode);
+      if (isValidValue(ev.price_type)) metaParts.push(ev.price_type);
+
+      div.innerHTML = `
+        <div class="event-title">${ev.title}</div>
+        <div class="event-meta">${metaParts.join(" · ")}</div>
+        <div class="event-desc">${ev.clean_desc?.substring(0, 120) ?? ""}…</div>
+        <span class="badge">${ev.city ?? ""}</span>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  /* Sidebar toggle */
+  const sidebar        = document.getElementById("sidebar");
+  const mainToggle     = document.getElementById("main-menu");
+  const floatingToggle = document.getElementById("sidebar-toggle-floating");
+  const toggleSidebar  = () => sidebar.classList.toggle("hidden");
+  mainToggle.addEventListener("click", toggleSidebar);
+  floatingToggle.addEventListener("click", toggleSidebar);
+
+  /* Active nav */
+  const path = window.location.pathname;
+  document.querySelectorAll(".nav-item").forEach(link => {
+    const page = link.dataset.page;
+    const active =
+      (page === "home"        && path === "/") ||
+      (page === "search"      && path.endsWith("/search")) ||
+      (page === "recommender" && path.endsWith("/recommender")) ||
+      (page === "view"        && path.endsWith("/view"));
+    link.classList.toggle("active", active);
+  });
+</script>
+</body>
+</html>
