@@ -3,10 +3,10 @@ import numpy as np
 from db.data_base import get_recent_interactions,get_recent_searches,get_top_interaction
 import os
 from huggingface_hub import InferenceClient
-import time
 
 # ---------------- LOAD DATA ----------------
 final_df = pd.read_csv("data/event_data.csv",keep_default_na=False)
+
 
 embeddings = np.load("data/event_embeddings2.npy").astype(np.float32)
 #embeddings= np.load("data/event_embeddings.npy") 
@@ -60,7 +60,6 @@ def get_embedding(text):
 
     hash[text] = emb
     return emb
-
 
 def interaction_vector(uid):
     interactions = get_recent_interactions(uid)
@@ -212,4 +211,8 @@ def recommend_personalized(user_interest):
 
     return final_df.iloc[top_idx][["title", "datetime", "url"]]
 
-print(recommend_by_query("ai workshop", top_k=5))
+
+
+
+
+

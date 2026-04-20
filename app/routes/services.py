@@ -1,5 +1,5 @@
 import os
-from flask import Flask,jsonify,request,render_template,redirect,url_for,session, Blueprint,abort
+from flask import jsonify,request,render_template,redirect,url_for,session, Blueprint,abort
 from db.data_base import user_insert, load_data,get_event,save_search,save_user_interaction,get_clicked_events,user_exists,get_userid
 from recommender.recommendation import recommend_by_query,recommend_similar_event,recommend_based_on_prevSearches,recommend_based_on_user_interaction,popular_event_list
 from scrappers.scrapper2 import add_new_Event
