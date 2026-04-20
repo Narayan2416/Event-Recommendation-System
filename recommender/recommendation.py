@@ -62,7 +62,6 @@ def get_embedding(text):
     return emb
 
 
-
 def interaction_vector(uid):
     interactions = get_recent_interactions(uid)
     interactions = remove_duplicate_interactions(interactions)
