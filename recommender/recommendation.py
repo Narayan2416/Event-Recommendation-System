@@ -1,23 +1,34 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
-from db.data_base import get_recent_interactions,get_recent_searches,get_top_interaction,db,users
-from pymongo import MongoClient
-import time
+from db.data_base import get_recent_interactions,get_recent_searches,get_top_interaction
+import os
+from huggingface_hub import InferenceClient
 
 # ---------------- LOAD DATA ----------------
 final_df = pd.read_csv("data/event_data.csv",keep_default_na=False)
 
-embeddings = np.load("data/event_embeddings2.npy")
+
+embeddings = np.load("data/event_embeddings2.npy").astype(np.float32)
 #embeddings= np.load("data/event_embeddings.npy") 
 
 assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embeddings"
 
-model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
-#model=SentenceTransformer('all-MiniLM-L6-v2')
+#model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
+
+# ------------------ HF CLIENT ------------------
+client = InferenceClient(
+    model="sentence-transformers/all-mpnet-base-v2",
+    token=os.getenv("HF_TOKEN")
+)
+
 
 # helper functions-----------------------------------------------------------------------------------------------
+
+# ------------------ COSINE SIMILARITY ------------------
+def cosine_similarity(a, b):
+    a_norm = np.linalg.norm(a, axis=1, keepdims=True)
+    b_norm = np.linalg.norm(b, axis=1)
+    return np.dot(a, b.T) / (a_norm * b_norm + 1e-10)
 
 def remove_duplicate_interactions(interactions):
     seen = set()
@@ -36,6 +47,19 @@ def remove_duplicate_searches(searches):
             unique_searches.append(search)
             seen.add(search['query'])
     return unique_searches
+
+hash={}
+def get_embedding(text):
+    if text in hash:
+        return hash[text]
+
+    emb = client.feature_extraction(text)
+
+    # Handle nested output
+    emb = emb[0] if isinstance(emb[0], list) else emb
+
+    hash[text] = emb
+    return emb
 
 def interaction_vector(uid):
     interactions = get_recent_interactions(uid)
@@ -64,7 +88,7 @@ def search_vector(uid):
     vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
     divi = 0
     for i, search in enumerate(searches):
-        query_emb = model.encode([search['query']],normalize_embeddings=True)
+        query_emb = np.array(get_embedding(search['query'])).reshape(1, -1)
         query_emb = query_emb.squeeze()
         recency_weight = 1 / (i + 1)
         vec += query_emb * recency_weight
@@ -75,14 +99,10 @@ def search_vector(uid):
 #recommendation functions--------------------------------------------------------------------------------------
 
 def recommend_by_query(query, top_k=100):
-    query_emb = model.encode([query],normalize_embeddings=True)
+    query_emb = np.array(get_embedding(query)).reshape(1, -1)
     sims = cosine_similarity(query_emb, embeddings)[0]
 
-    valid_idx = np.where(sims > 0.25)[0]
-    if len(valid_idx) == 0:
-        return []
-
-    top_idx = valid_idx[np.argsort(sims[valid_idx])[::-1][:top_k]]
+    top_idx = np.argsort(sims)[::-1][:top_k]
     results = final_df.iloc[top_idx][['id','title','mode','price_type','clean_desc','city']].copy()
 
     return results.to_dict(orient="records")
@@ -190,6 +210,8 @@ def recommend_personalized(user_interest):
     top_idx = scores.argsort()[::-1][:5]
 
     return final_df.iloc[top_idx][["title", "datetime", "url"]]
+
+
 
 
 
