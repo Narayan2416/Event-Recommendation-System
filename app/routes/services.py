@@ -18,8 +18,6 @@ def is_local():
 
 @bp.route("/load_data")
 def load_data_route():
-    if not is_local():
-        abort(403)
     data = load_data()
     #print(data[14])
     return jsonify(data)
