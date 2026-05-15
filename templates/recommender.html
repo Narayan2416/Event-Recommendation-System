@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recommended for You — EventIQ</title>
-    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
     <link rel="stylesheet" href="{{ url_for('static', filename='recommender.css') }}">
 </head>
 <body>
@@ -97,10 +96,7 @@
   }
 
   async function loadRecommendations() {
-    const res = await fetch("/api/recommendation", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
+    const res= await fetch(`/api/recommendation`);
     const data = await res.json();
 
     searchEvents   = data.searches  || [];
