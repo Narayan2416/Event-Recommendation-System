@@ -126,7 +126,7 @@
       return;
     }
 
-    const res = await fetch(`/api/semantic_search?query=${encodeURIComponent(query)}`);
+    const res = await fetch(`/api/events/semantic_search?query=${encodeURIComponent(query)}`);
 
     semanticResults = await res.json();
     applyFilters();

@@ -45,7 +45,7 @@ def api_RecSearches():
         "searches": searches
     })
 
-@bp.route("/api/recommendation/popular", methods=["POST","GET"])
+@bp.route("/api/events/popular", methods=["POST","GET"])
 def api_RecPopular():
 
     popular = popular_event_list()
@@ -82,7 +82,7 @@ def api_recommendation():
     })
 
 
-@bp.route("/api/semantic_search", methods=["POST","GET"])
+@bp.route("/api/events/semantic_search", methods=["POST","GET"])
 def semantic_search():
     if request.method == "POST":
         query = request.json.get("query", "")
