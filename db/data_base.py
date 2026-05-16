@@ -40,7 +40,7 @@ def format_datetime(dt_str):
 
 def get_event(id):
 
-    event = event_map.get(int(id))
+    event = event_map.get(id)
     #print(event)
 
     if not event:

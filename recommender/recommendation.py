@@ -109,7 +109,7 @@ def recommend_by_query(query, top_k=100):
 #print(recommend_by_query("ai workshop", top_k=5))
 
 def recommend_similar_event(event_index, top_k=10):
-    event_index = id_to_index.get(int(event_index))
+    event_index = id_to_index.get(event_index)
     if event_index is None:
         return []
     event_emb = embeddings[event_index].reshape(1, -1)

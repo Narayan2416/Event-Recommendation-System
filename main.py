@@ -13,6 +13,6 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")
 app.register_blueprint(services_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(routes_bp)
-
+'''
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0')'''

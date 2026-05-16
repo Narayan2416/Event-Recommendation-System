@@ -32,7 +32,7 @@ def recommender(uid):
     )
 
 
-@bp.route("/<uid>/event/<event_id>")
+@bp.route("/<uid>/event/<int:event_id>")
 def event_details(uid, event_id):
 
     event = get_event(event_id)
@@ -49,7 +49,7 @@ def event_details(uid, event_id):
     )
 
 
-@bp.route("/<uid>/clicked_event/<event_id>")
+@bp.route("/<uid>/clicked_event/<int:event_id>")
 def clicked_event(uid, event_id):
 
     save_user_interaction(uid,event_id,action="click")
