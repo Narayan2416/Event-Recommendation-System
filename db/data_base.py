@@ -15,6 +15,11 @@ search_history=db["search_history"]
 
 data=pd.read_csv("data/event_data.csv",keep_default_na=False)
 
+event_map = {
+    int(row["id"]): row.to_dict()
+    for _, row in data.iterrows()
+}
+
 def load_data():
     # Load your event data here
     return data[['id','title','mode','price_type','clean_desc','city']].to_dict(orient="records")
@@ -34,11 +39,22 @@ def format_datetime(dt_str):
         return None
 
 def get_event(id):
-    event=data[data['id']==int(id)]
-    ans=event.iloc[0][['id','title','mode','price_type','clean_desc','location','url']].to_dict()
-    '''ans['start_datetime'] = format_datetime(event.iloc[0]['start_datetime'])
-    ans['end_datetime'] = format_datetime(event.iloc[0]['end_datetime'])'''
-    return ans
+
+    event = event_map.get(id)
+    #print(event)
+
+    if not event:
+        return None
+
+    return {
+        "id": event["id"],
+        "title": event["title"],
+        "mode": event["mode"],
+        "price_type": event["price_type"],
+        "clean_desc": event["clean_desc"],
+        "location": event["location"],
+        "url": event["url"]
+    }
 
 def save_search(uid,query):
     search_history.insert_one({
@@ -121,15 +137,14 @@ def get_clicked_events(uid):
         .sort("timestamp", -1)
     )
     ans=[]
-    visi=[]
+    visi=set()
     for i in l:
         if i['event_id'] in visi:
             continue
-        event=data.loc[data['id']==int(i['event_id'])].to_dict(orient="records")
-        '''event[0]['start_datetime'] = format_datetime(event[0]['start_datetime'])
-        event[0]['end_datetime'] = format_datetime(event[0]['end_datetime'])'''
-        ans.append(event[0])
-        visi.append(i['event_id'])
+        event = event_map.get(int(i['event_id']))
+        if event is not None:
+            ans.append(event)
+        visi.add(i['event_id'])
     return ans
 
 

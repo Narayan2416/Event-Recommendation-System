@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Explore Events — EventIQ</title>
-    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
     <link rel="stylesheet" href="{{ url_for('static', filename='search.css') }}">
 </head>
 <body>
@@ -87,7 +86,7 @@
 
   document.addEventListener("DOMContentLoaded", async () => {
     try {
-      const res = await fetch("/load_data");
+      const res = await fetch("/api/events");
       events = await res.json();
       populateFilters(events);
       displayEvents(events);
@@ -121,12 +120,14 @@
 
   async function searchWithQuery() {
     const query = document.getElementById("search").value.trim();
-    if (!query) { semanticResults = null; applyFilters(); return; }
-    const res = await fetch("/semantic_search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query })
-    });
+    if (!query){
+      semanticResults = null;
+      applyFilters();
+      return;
+    }
+
+    const res = await fetch(`/api/events/semantic_search?query=${encodeURIComponent(query)}`);
+
     semanticResults = await res.json();
     applyFilters();
   }

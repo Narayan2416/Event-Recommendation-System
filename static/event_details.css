@@ -182,6 +182,8 @@ body {
   max-width: 1320px;
   width: 100%;
   margin: 0 auto;
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
 }
 
 /* ══════════════════════════════════════

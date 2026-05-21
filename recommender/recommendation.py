@@ -6,14 +6,10 @@ from huggingface_hub import InferenceClient
 
 # ---------------- LOAD DATA ----------------
 final_df = pd.read_csv("data/event_data.csv",keep_default_na=False)
-
-
 embeddings = np.load("data/event_embeddings2.npy").astype(np.float32)
-#embeddings= np.load("data/event_embeddings.npy") 
+#model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 assert len(final_df) == embeddings.shape[0], "Mismatch between CSV and embeddings"
-
-#model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 # ------------------ HF CLIENT ------------------
 client = InferenceClient(
@@ -21,6 +17,10 @@ client = InferenceClient(
     token=os.getenv("HF_TOKEN")
 )
 
+id_to_index = {
+    int(event_id): idx
+    for idx, event_id in enumerate(final_df["id"])
+}
 
 # helper functions-----------------------------------------------------------------------------------------------
 
@@ -67,10 +67,9 @@ def interaction_vector(uid):
     vec = np.zeros(embeddings.shape[1])  # same dimension as embedding
     divi=0
     for i,interaction in enumerate(interactions):
-        idx = final_df.index[final_df['id'] == int(interaction['event_id'])]
-        if len(idx) == 0:
+        event_index = id_to_index.get(int(interaction['event_id']))
+        if event_index is None:
             continue
-        event_index = idx[0]
         val=embeddings[event_index]
         if(interaction['action']=='click'):
             weight=0.7
@@ -110,10 +109,9 @@ def recommend_by_query(query, top_k=100):
 #print(recommend_by_query("ai workshop", top_k=5))
 
 def recommend_similar_event(event_index, top_k=10):
-    idx = final_df.index[final_df['id'] == int(event_index)]
-    if len(idx) == 0:
+    event_index = id_to_index.get(event_index)
+    if event_index is None:
         return []
-    event_index = idx[0]
     event_emb = embeddings[event_index].reshape(1, -1)
     sims = cosine_similarity(event_emb, embeddings)[0]
 
@@ -122,6 +120,7 @@ def recommend_similar_event(event_index, top_k=10):
     results['score']=((sims[top_idx]+1)/2).round(2)
     results['source']='similar_events'
     return results.to_dict(orient="records")
+
 
 def recommend_based_on_user_interaction(uid,top_k=10):
     seen_event_ids = {int(i['event_id']) for i in get_recent_interactions(uid)}
@@ -175,6 +174,7 @@ def recommend_based_on_prevSearches(uid,top_k=10):
     results['score']=((score[top_idx]+1)/2).round(2)
     results['source']='search'
     return results.to_dict(orient="records")
+
 
 def popular_event_list(top=10):
     top_events = get_top_interaction(top)

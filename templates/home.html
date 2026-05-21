@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EventIQ — Discover Events That Matter</title>
-    <link rel="preload" as="image" href="/static/pencil_yellow.jpg">
     <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
 </head>
 <body>
@@ -28,17 +27,6 @@
           data-size="large"
           data-width="340">
         </div>
-
-        <div class="divider"><span>or continue with email</span></div>
-
-        <input type="text"  name="username" placeholder="Your name" autocomplete="name">
-        <input type="email" name="email"    placeholder="Email address" autocomplete="email">
-
-        <button type="submit">Continue &rarr;</button>
-
-        {% if error %}
-          <div class="error">{{ error }}</div>
-        {% endif %}
 
         <p class="form-footer">
           By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.

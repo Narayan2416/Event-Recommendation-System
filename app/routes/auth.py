@@ -14,17 +14,6 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 
 @bp.route("/",methods=['GET','POST'])
 def home():
-    if request.method=='POST':
-        name=request.form.get('username')
-        email=request.form.get('email')
-        uid=get_userid(name,email)
-        if(uid is None):
-            return render_template("home.html", error="User not found",CLIENT_ID=CLIENT_ID)
-        if(user_exists(uid)):
-            session['uid'] = uid
-            return redirect(url_for("search",uid=session['uid']))
-        else:
-            return render_template("home.html", error="Sign In Required",CLIENT_ID=CLIENT_ID)
     return render_template("home.html",CLIENT_ID=CLIENT_ID)
 
 
