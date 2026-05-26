@@ -85,7 +85,9 @@ Create a `.env` file in the project root:
 ```
 CLIENT_ID=your_google_client_id
 FLASK_SECRET_KEY=your_secret_key
-MONGO_URI=your_mongodb_connection_string
+MONGO_URL=your_mongodb_connection_string
+ENV=production
+HF_TOKEN=your_huggingface_token
 ```
 
 ---
@@ -93,7 +95,7 @@ MONGO_URI=your_mongodb_connection_string
 ## Run the Application
 
 ```bash
-python main.py
+gunicorn main:app
 ```
 
 
