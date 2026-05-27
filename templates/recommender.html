@@ -96,7 +96,11 @@
   }
 
   async function loadRecommendations() {
-    const res= await fetch(`/api/recommendation`);
+    const res= await fetch(`/api/recommendation`,{
+        method:"GET",
+        credentials:"include"
+    });
+    
     const data = await res.json();
 
     searchEvents   = data.searches  || [];
