@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Events — EventIQ</title>
+    <title>EventIQ</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='my_events.css') }}">
 </head>
 <body>
@@ -21,9 +21,6 @@
       </div>
 
       <nav class="sidebar-nav">
-        <a href="/" class="nav-item" data-page="home">
-          <span class="icon">🏠</span> Home
-        </a>
         <a href="/{{ uid }}/search" class="nav-item" data-page="search">
           <span class="icon">🔍</span> Explore Events
         </a>
@@ -34,6 +31,9 @@
           <span class="icon">📌</span> My Events
         </a>
       </nav>
+      <a href="/" class="nav-item logout-item" data-page="home">
+        Logout
+      </a>
     </div>
   </aside>
 

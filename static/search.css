@@ -175,6 +175,19 @@ body {
   border-radius: 0 3px 3px 0;
 }
 
+.logout-item {
+    margin-top: auto;
+    padding: 14px 16px;
+    color: #d6d6d6;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    transition: 0.2s;
+}
+
+.logout-item:hover {
+    color: #f4c542;
+    background: rgba(255,255,255,0.05);
+}
+
 .sidebar.hidden { width: 0; }
 .sidebar.hidden .sidebar-inner { transform: translateX(-100%); opacity: 0; }
 
