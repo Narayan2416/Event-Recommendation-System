@@ -62,7 +62,7 @@ def api_recommendation():
     if uid is None:
         return jsonify({"error": "User ID is required"}), 400
 
-    st = time.time()
+    #st = time.time()
 
     rec_search = recommend_based_on_prevSearches(uid)
 
@@ -70,10 +70,10 @@ def api_recommendation():
 
     rec_popular = popular_event_list()
 
-    print(
+    '''print(
         f"Recommendation time: "
         f"{time.time() - st} seconds"
-    )
+    )'''
 
     return jsonify({
         "searches": rec_search,
